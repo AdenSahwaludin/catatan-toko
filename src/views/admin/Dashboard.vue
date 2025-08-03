@@ -64,7 +64,15 @@
               </v-chip>
             </div>
 
-            <div class="text-h4 font-weight-bold mb-1">
+            <div
+              class="text-h4 font-weight-bold mb-1"
+              style="
+                white-space: nowrap;
+                overflow: hidden;
+                text-overflow: ellipsis;
+              "
+              :title="stat.value"
+            >
               {{ stat.value }}
             </div>
             <div class="text-subtitle-1 text-medium-emphasis">
@@ -442,7 +450,7 @@ onMounted(async () => {
 }
 
 .v-theme--dark .modern-card {
-  background: rgba(30, 30, 30, 0.95);
+  background: #1d283b;
   border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
@@ -453,8 +461,8 @@ onMounted(async () => {
 .v-theme--dark .welcome-section {
   background: linear-gradient(
     135deg,
-    rgba(102, 126, 234, 0.15) 0%,
-    rgba(118, 75, 162, 0.15) 100%
+    rgb(29, 40, 59) 0%,
+    rgba(29, 40, 59, 0.8) 100%
   );
   color: rgba(255, 255, 255, 0.9);
 }

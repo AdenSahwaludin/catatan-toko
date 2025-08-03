@@ -123,50 +123,202 @@
             </v-col>
           </v-row>
 
-          <!-- Items List -->
-          <v-data-table
-            :headers="itemHeaders"
-            :items="filteredItems"
-            :loading="loadingItems"
-            item-value="id"
-            density="compact"
+          <!-- Cart Summary Mobile -->
+          <div class="d-block d-md-none mb-4" v-if="cart.length > 0">
+            <v-card color="primary" variant="tonal">
+              <v-card-text class="pa-3">
+                <div class="d-flex justify-space-between align-center">
+                  <div>
+                    <div class="text-caption">
+                      {{ cart.length }} item dalam keranjang
+                    </div>
+                    <div class="text-h6 font-weight-bold">
+                      {{ formatCurrency(cartTotal) }}
+                    </div>
+                  </div>
+                  <v-btn
+                    color="primary"
+                    size="small"
+                    variant="flat"
+                    @click="scrollToCart"
+                    append-icon="mdi-arrow-down"
+                  >
+                    Lihat
+                  </v-btn>
+                </div>
+              </v-card-text>
+            </v-card>
+          </div>
+
+          <!-- Filter Summary Mobile -->
+          <div
+            class="d-block d-md-none mb-3"
+            v-if="itemSearch || selectedCategory || !showAvailableOnly"
           >
-            <template #item.price="{ item }">
-              {{ formatCurrency(item.price) }}
-            </template>
-
-            <template #item.stock="{ item }">
-              <v-chip
-                :color="
-                  item.stock < 5
-                    ? 'error'
-                    : item.stock < 10
-                    ? 'warning'
-                    : 'success'
-                "
-                size="small"
-                variant="tonal"
+            <v-card variant="outlined" color="info">
+              <v-card-text class="pa-2">
+                <div class="d-flex align-center justify-space-between">
+                  <div class="text-caption">
+                    <span v-if="itemSearch">Pencarian: "{{ itemSearch }}"</span>
+                    <span v-if="selectedCategory">
+                      • {{ getCategoryName(selectedCategory) }}</span
+                    >
+                    <span v-if="!showAvailableOnly">
+                      • Termasuk habis stok</span
+                    >
+                  </div>
+                  <v-btn
+                    size="x-small"
+                    variant="text"
+                    icon="mdi-close"
+                    @click="clearFilters"
+                  />
+                </div>
+              </v-card-text>
+            </v-card>
+          </div>
+          <div class="d-block d-md-none">
+            <v-row>
+              <v-col
+                v-for="item in filteredItems"
+                :key="item.id"
+                cols="6"
+                sm="4"
+                md="3"
               >
-                {{ item.stock }}
-              </v-chip>
-            </template>
+                <v-card
+                  :ripple="true"
+                  hover
+                  :disabled="item.stock === 0"
+                  :class="{
+                    'item-card': true,
+                    'item-in-cart': isInCart(item.id),
+                    'item-out-of-stock': item.stock === 0,
+                  }"
+                  @click="handleItemClick(item)"
+                >
+                  <v-card-text class="pa-3">
+                    <!-- Stock indicator -->
+                    <div class="d-flex justify-end mb-2">
+                      <v-chip
+                        :color="
+                          item.stock < 5
+                            ? 'error'
+                            : item.stock < 10
+                            ? 'warning'
+                            : 'success'
+                        "
+                        size="x-small"
+                        variant="tonal"
+                      >
+                        {{ item.stock }}
+                      </v-chip>
+                    </div>
 
-            <template #item.actions="{ item }">
-              <v-btn
-                color="primary"
-                size="small"
-                @click="addToCart(item)"
-                :disabled="item.stock === 0"
-              >
-                Tambah
-              </v-btn>
-            </template>
-          </v-data-table>
+                    <!-- Item name -->
+                    <div
+                      class="text-subtitle-2 font-weight-bold mb-1 text-truncate"
+                    >
+                      {{ item.name }}
+                    </div>
+
+                    <!-- Brand -->
+                    <div class="text-caption text-medium-emphasis mb-2">
+                      {{ item.brand }}
+                    </div>
+
+                    <!-- Price -->
+                    <div class="text-h6 font-weight-bold text-primary mb-2">
+                      {{ item.price ? formatCurrency(item.price) : "Rp 0" }}
+                    </div>
+
+                    <!-- Cart status -->
+                    <div v-if="isInCart(item.id)" class="text-center">
+                      <v-chip
+                        color="success"
+                        size="x-small"
+                        variant="flat"
+                        prepend-icon="mdi-cart"
+                      >
+                        {{ getCartQuantity(item.id) }}
+                      </v-chip>
+                    </div>
+                    <div v-else-if="item.stock > 0" class="text-center">
+                      <v-icon
+                        size="small"
+                        color="primary"
+                        class="cart-hint-icon"
+                      >
+                        mdi-plus-circle-outline
+                      </v-icon>
+                    </div>
+                  </v-card-text>
+                </v-card>
+              </v-col>
+            </v-row>
+          </div>
+
+          <!-- Items List Desktop -->
+          <div class="d-none d-md-block">
+            <v-data-table
+              :headers="itemHeaders"
+              :items="filteredItems"
+              :loading="loadingItems"
+              item-value="id"
+              density="compact"
+              @click:row="handleRowClick"
+              class="clickable-table"
+            >
+              <template #item.price="{ item }">
+                {{ item.price ? formatCurrency(item.price) : "Rp 0" }}
+              </template>
+
+              <template #item.stock="{ item }">
+                <v-chip
+                  :color="
+                    item.stock < 5
+                      ? 'error'
+                      : item.stock < 10
+                      ? 'warning'
+                      : 'success'
+                  "
+                  size="small"
+                  variant="tonal"
+                >
+                  {{ item.stock }}
+                </v-chip>
+              </template>
+
+              <template #item.actions="{ item }">
+                <div @click.stop>
+                  <v-chip
+                    v-if="isInCart(item.id)"
+                    color="success"
+                    size="small"
+                    variant="flat"
+                    prepend-icon="mdi-cart"
+                  >
+                    {{ getCartQuantity(item.id) }}
+                  </v-chip>
+                  <v-icon
+                    v-else-if="item.stock > 0"
+                    color="primary"
+                    size="small"
+                  >
+                    mdi-plus-circle-outline
+                  </v-icon>
+                  <v-icon v-else color="error" size="small">
+                    mdi-close-circle-outline
+                  </v-icon>
+                </div>
+              </template>
+            </v-data-table>
+          </div>
         </v-card-text>
       </v-card>
 
       <!-- Cart -->
-      <v-card class="mb-4">
+      <v-card id="cart-section" class="mb-4">
         <v-card-title class="d-flex align-center justify-space-between">
           <span>Keranjang Penjualan</span>
           <div class="d-flex align-center gap-2">
@@ -180,9 +332,19 @@
               variant="outlined"
               @click="clearCart"
               prepend-icon="mdi-cart-remove"
+              class="d-none d-md-flex"
             >
               Clear
             </v-btn>
+            <v-btn
+              v-if="cart.length > 0"
+              color="warning"
+              size="small"
+              variant="text"
+              icon="mdi-cart-remove"
+              @click="clearCart"
+              class="d-flex d-md-none"
+            />
           </div>
         </v-card-title>
 
@@ -193,56 +355,146 @@
           >
             <v-icon size="48" class="mb-2">mdi-cart-outline</v-icon>
             <div>Belum ada barang di keranjang</div>
+            <div class="text-caption mt-1">
+              Tap barang untuk menambah ke keranjang
+            </div>
           </div>
 
           <div v-else>
-            <v-list>
-              <v-list-item
-                v-for="(cartItem, index) in cart"
-                :key="cartItem.id"
-                class="px-0"
-              >
-                <template #prepend>
-                  <v-avatar color="primary" size="32">
-                    <v-icon size="16">mdi-package</v-icon>
-                  </v-avatar>
-                </template>
+            <!-- Mobile Cart List -->
+            <div class="d-block d-md-none">
+              <v-row>
+                <v-col
+                  v-for="(cartItem, index) in cart"
+                  :key="cartItem.id"
+                  cols="12"
+                >
+                  <v-card variant="outlined" class="cart-item-mobile">
+                    <v-card-text class="pa-3">
+                      <div class="d-flex align-center">
+                        <v-avatar color="primary" size="40" class="mr-3">
+                          <v-icon size="20">mdi-package</v-icon>
+                        </v-avatar>
 
-                <v-list-item-title>{{ cartItem.name }}</v-list-item-title>
-                <v-list-item-subtitle>
-                  {{ formatCurrency(cartItem.price) }} x {{ cartItem.quantity }}
-                </v-list-item-subtitle>
+                        <div class="flex-grow-1">
+                          <div class="text-subtitle-2 font-weight-bold">
+                            {{ cartItem.name }}
+                          </div>
+                          <div class="text-caption text-medium-emphasis">
+                            {{ cartItem.brand }}
+                          </div>
+                          <div
+                            class="text-body-2 font-weight-bold text-primary"
+                          >
+                            {{
+                              cartItem.price
+                                ? formatCurrency(cartItem.price)
+                                : "Rp 0"
+                            }}
+                            x {{ cartItem.quantity }}
+                          </div>
+                        </div>
 
-                <template #append>
-                  <div class="d-flex align-center">
-                    <v-btn
-                      icon="mdi-minus"
-                      size="small"
-                      variant="text"
-                      @click="updateCartQuantity(index, cartItem.quantity - 1)"
-                    />
-                    <span class="mx-2 font-weight-bold">{{
-                      cartItem.quantity
-                    }}</span>
-                    <v-btn
-                      icon="mdi-plus"
-                      size="small"
-                      variant="text"
-                      @click="updateCartQuantity(index, cartItem.quantity + 1)"
-                      :disabled="cartItem.quantity >= cartItem.stock"
-                    />
-                    <v-btn
-                      icon="mdi-delete"
-                      size="small"
-                      variant="text"
-                      color="error"
-                      @click="removeFromCart(index)"
-                      class="ml-2"
-                    />
-                  </div>
-                </template>
-              </v-list-item>
-            </v-list>
+                        <div class="d-flex flex-column align-center ml-3">
+                          <!-- Quantity controls -->
+                          <div class="d-flex align-center mb-1">
+                            <v-btn
+                              icon="mdi-minus"
+                              size="small"
+                              variant="outlined"
+                              @click="
+                                updateCartQuantity(index, cartItem.quantity - 1)
+                              "
+                              density="compact"
+                            />
+                            <span class="mx-3 font-weight-bold text-h6">{{
+                              cartItem.quantity
+                            }}</span>
+                            <v-btn
+                              icon="mdi-plus"
+                              size="small"
+                              variant="outlined"
+                              @click="
+                                updateCartQuantity(index, cartItem.quantity + 1)
+                              "
+                              :disabled="cartItem.quantity >= cartItem.stock"
+                              density="compact"
+                            />
+                          </div>
+
+                          <!-- Remove button -->
+                          <v-btn
+                            icon="mdi-delete"
+                            size="small"
+                            variant="text"
+                            color="error"
+                            @click="removeFromCart(index)"
+                          />
+                        </div>
+                      </div>
+                    </v-card-text>
+                  </v-card>
+                </v-col>
+              </v-row>
+            </div>
+
+            <!-- Desktop Cart List -->
+            <div class="d-none d-md-block">
+              <v-list>
+                <v-list-item
+                  v-for="(cartItem, index) in cart"
+                  :key="cartItem.id"
+                  class="px-0"
+                >
+                  <template #prepend>
+                    <v-avatar color="primary" size="32">
+                      <v-icon size="16">mdi-package</v-icon>
+                    </v-avatar>
+                  </template>
+
+                  <v-list-item-title>{{ cartItem.name }}</v-list-item-title>
+                  <v-list-item-subtitle>
+                    {{
+                      cartItem.price ? formatCurrency(cartItem.price) : "Rp 0"
+                    }}
+                    x {{ cartItem.quantity }}
+                  </v-list-item-subtitle>
+
+                  <template #append>
+                    <div class="d-flex align-center">
+                      <v-btn
+                        icon="mdi-minus"
+                        size="small"
+                        variant="text"
+                        @click="
+                          updateCartQuantity(index, cartItem.quantity - 1)
+                        "
+                      />
+                      <span class="mx-2 font-weight-bold">{{
+                        cartItem.quantity
+                      }}</span>
+                      <v-btn
+                        icon="mdi-plus"
+                        size="small"
+                        variant="text"
+                        @click="
+                          updateCartQuantity(index, cartItem.quantity + 1)
+                        "
+                        :disabled="cartItem.quantity >= cartItem.stock"
+                      />
+                      <v-btn
+                        icon="mdi-delete"
+                        size="small"
+                        variant="text"
+                        color="error"
+                        @click="removeFromCart(index)"
+                        class="ml-2"
+                      />
+                    </div>
+                  </template>
+                </v-list-item>
+              </v-list>
+            </div>
 
             <v-divider class="my-4" />
 
@@ -295,11 +547,13 @@
 import { ref, computed, onMounted } from "vue";
 import { useAuthStore } from "@/stores/auth";
 import { useDataStore } from "@/stores/data";
+import { useNotificationStore } from "@/stores/notifications";
 import { createSale, updateItemStock } from "@/utils/supabase";
 import { formatCurrency, validateInput } from "@/utils/helpers";
 
 const authStore = useAuthStore();
 const dataStore = useDataStore();
+const notificationStore = useNotificationStore();
 
 const inputMode = ref("manual");
 const saving = ref(false);
@@ -324,8 +578,36 @@ const itemHeaders = [
   { title: "Merek", key: "brand", sortable: true },
   { title: "Harga", key: "price", sortable: true },
   { title: "Stok", key: "stock", sortable: true },
-  { title: "Aksi", key: "actions", sortable: false, width: 100 },
+  { title: "Status", key: "actions", sortable: false, width: 100 },
 ];
+
+// Helper functions
+const isInCart = (itemId) => {
+  return cart.value.some((cartItem) => cartItem.id === itemId);
+};
+
+const getCartQuantity = (itemId) => {
+  const cartItem = cart.value.find((cartItem) => cartItem.id === itemId);
+  return cartItem ? cartItem.quantity : 0;
+};
+
+const getCategoryName = (categoryId) => {
+  const category = dataStore.categories.find((cat) => cat.id === categoryId);
+  return category ? category.name : "";
+};
+
+const scrollToCart = () => {
+  const cartElement = document.getElementById("cart-section");
+  if (cartElement) {
+    cartElement.scrollIntoView({ behavior: "smooth" });
+  }
+};
+
+const clearFilters = () => {
+  itemSearch.value = "";
+  selectedCategory.value = "";
+  showAvailableOnly.value = true;
+};
 
 const categoryOptions = computed(() => [
   { title: "Semua Kategori", value: "" },
@@ -362,10 +644,75 @@ const filteredItems = computed(() => {
 });
 
 const cartTotal = computed(() => {
-  return cart.value.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  return cart.value.reduce((sum, item) => {
+    const price = Number(item.price) || 0;
+    const quantity = Number(item.quantity) || 0;
+    const subtotal = price * quantity;
+
+    // Validate subtotal
+    if (isNaN(subtotal) || !isFinite(subtotal)) {
+      console.warn(
+        "Invalid subtotal for item:",
+        item.name,
+        "price:",
+        price,
+        "quantity:",
+        quantity
+      );
+      return sum;
+    }
+
+    return sum + subtotal;
+  }, 0);
 });
 
+// Handle item click - main function for adding items to cart
+const handleItemClick = (item) => {
+  if (item.stock === 0) {
+    notificationStore.addNotification({
+      type: "error",
+      message: `Barang "${item.name}" sedang habis stok`,
+    });
+    return;
+  }
+
+  addToCart(item);
+};
+
+// Handle row click for desktop data table
+const handleRowClick = (event, { item }) => {
+  // Vuetify's @click:row passes (event, { item })
+  handleItemClick(item);
+};
+
 const addToCart = (item) => {
+  // Validate item data
+  if (
+    !item ||
+    !item.id ||
+    !item.name ||
+    item.price === undefined ||
+    item.price === null
+  ) {
+    console.error("Invalid item data:", item);
+    notificationStore.addNotification({
+      type: "error",
+      message: "Data barang tidak valid",
+    });
+    return;
+  }
+
+  // Ensure price is a valid number
+  const itemPrice = Number(item.price);
+  if (isNaN(itemPrice) || itemPrice < 0) {
+    console.error("Invalid item price:", item.price);
+    notificationStore.addNotification({
+      type: "error",
+      message: `Harga barang "${item.name}" tidak valid`,
+    });
+    return;
+  }
+
   const existingIndex = cart.value.findIndex(
     (cartItem) => cartItem.id === item.id
   );
@@ -376,23 +723,39 @@ const addToCart = (item) => {
     const newQuantity = currentCartItem.quantity + 1;
 
     if (newQuantity > item.stock) {
-      alert(`Stok "${item.name}" tidak mencukupi. Maksimal: ${item.stock}`);
+      notificationStore.addNotification({
+        type: "error",
+        message: `Stok "${item.name}" tidak mencukupi. Maksimal: ${item.stock}`,
+      });
       return;
     }
 
     // Increase quantity if item already in cart
     updateCartQuantity(existingIndex, newQuantity);
+    notificationStore.addNotification({
+      type: "success",
+      message: `"${item.name}" ditambahkan (${newQuantity})`,
+    });
   } else {
     // Check stock before adding new item
     if (item.stock <= 0) {
-      alert(`Barang "${item.name}" sedang habis stok`);
+      notificationStore.addNotification({
+        type: "error",
+        message: `Barang "${item.name}" sedang habis stok`,
+      });
       return;
     }
 
-    // Add new item to cart
+    // Add new item to cart with validated price
     cart.value.push({
       ...item,
+      price: itemPrice, // Ensure price is a number
       quantity: 1,
+    });
+
+    notificationStore.addNotification({
+      type: "success",
+      message: `"${item.name}" ditambahkan ke keranjang`,
     });
   }
 };
@@ -407,9 +770,10 @@ const updateCartQuantity = (index, newQuantity) => {
 
   // Validate against available stock
   if (newQuantity > cartItem.stock) {
-    alert(
-      `Stok "${cartItem.name}" tidak mencukupi. Maksimal: ${cartItem.stock}`
-    );
+    notificationStore.addNotification({
+      type: "error",
+      message: `Stok "${cartItem.name}" tidak mencukupi. Maksimal: ${cartItem.stock}`,
+    });
     return;
   }
 
@@ -614,3 +978,74 @@ onMounted(async () => {
   }
 });
 </script>
+
+<style scoped>
+/* Item cards for mobile */
+.item-card {
+  cursor: pointer;
+  transition: all 0.3s ease;
+  border: 2px solid transparent;
+  min-height: 140px;
+}
+
+.item-card:hover:not(.item-out-of-stock) {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+}
+
+.item-card.item-in-cart {
+  border-color: rgb(var(--v-theme-success));
+  background-color: rgba(var(--v-theme-success), 0.1);
+}
+
+.item-card.item-out-of-stock {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.cart-hint-icon {
+  animation: pulse 2s infinite;
+}
+
+@keyframes pulse {
+  0% {
+    opacity: 0.6;
+  }
+  50% {
+    opacity: 1;
+  }
+  100% {
+    opacity: 0.6;
+  }
+}
+
+/* Clickable table rows */
+.clickable-table :deep(.v-data-table__wrapper table tbody tr) {
+  cursor: pointer;
+  transition: background-color 0.2s ease;
+}
+
+.clickable-table :deep(.v-data-table__wrapper table tbody tr:hover) {
+  background-color: rgba(var(--v-theme-primary), 0.1);
+}
+
+/* Cart item mobile styling */
+.cart-item-mobile {
+  transition: all 0.2s ease;
+}
+
+.cart-item-mobile:hover {
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+}
+
+/* Responsive improvements */
+@media (max-width: 600px) {
+  .item-card {
+    min-height: 120px;
+  }
+
+  .cart-item-mobile .v-card-text {
+    padding: 12px !important;
+  }
+}
+</style>

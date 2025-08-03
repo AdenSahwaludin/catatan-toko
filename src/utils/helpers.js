@@ -2,11 +2,23 @@ import jsPDF from "jspdf";
 import * as XLSX from "xlsx";
 
 export const formatCurrency = (amount) => {
+  // Validate and sanitize the amount
+  const numAmount = Number(amount);
+
+  // Return formatted zero if amount is invalid
+  if (!amount || isNaN(numAmount) || !isFinite(numAmount)) {
+    return new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      minimumFractionDigits: 0,
+    }).format(0);
+  }
+
   return new Intl.NumberFormat("id-ID", {
     style: "currency",
     currency: "IDR",
     minimumFractionDigits: 0,
-  }).format(amount);
+  }).format(numAmount);
 };
 
 export const formatDate = (date) => {

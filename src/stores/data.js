@@ -23,7 +23,14 @@ export const useDataStore = defineStore("data", () => {
   const fetchItems = async (filters = {}) => {
     try {
       loading.value = true;
-      items.value = await getItems(filters);
+      const rawItems = await getItems(filters);
+
+      // Sanitize item data to ensure price is always a valid number
+      items.value = rawItems.map((item) => ({
+        ...item,
+        price: Number(item.price) || 0,
+        stock: Number(item.stock) || 0,
+      }));
     } catch (error) {
       console.error("Error fetching items:", error);
     } finally {

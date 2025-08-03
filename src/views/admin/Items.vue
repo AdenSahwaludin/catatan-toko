@@ -142,7 +142,6 @@
                   v-model="formData.brand"
                   label="Merek"
                   variant="outlined"
-                  :rules="[validateInput.required]"
                   required
                 />
               </v-col>

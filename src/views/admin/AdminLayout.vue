@@ -129,10 +129,7 @@
       <!-- Header actions -->
       <div class="header-actions d-flex align-center">
         <!-- Notifications -->
-        <v-btn icon="mdi-bell-outline" variant="text" class="mr-2">
-          <v-icon>mdi-bell-outline</v-icon>
-          <v-badge color="error" content="3" floating />
-        </v-btn>
+        <NotificationPanel />
 
         <!-- Theme toggle -->
         <v-btn
@@ -182,20 +179,45 @@
 </template>
 
 <script setup>
-import { ref, computed } from "vue";
+import { ref, computed, onMounted } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
 import { useThemeStore } from "@/stores/theme";
+import { useNotificationStore } from "@/stores/notifications";
+import { useDataStore } from "@/stores/data";
+import NotificationPanel from "@/components/NotificationPanel.vue";
 
 const router = useRouter();
 const route = useRoute();
 const authStore = useAuthStore();
 const themeStore = useThemeStore();
+const notificationStore = useNotificationStore();
+const dataStore = useDataStore();
 
 const drawer = ref(true);
 const rail = ref(false);
 
-const menuItems = [
+// Initialize notifications when component mounts
+onMounted(async () => {
+  // Load data first
+  await Promise.all([
+    dataStore.fetchItems(),
+    dataStore.fetchSales(),
+    dataStore.fetchCategories(),
+    dataStore.fetchEmployees(),
+  ]);
+
+  // Initialize notifications with data
+  notificationStore.initializeNotifications(dataStore.items, dataStore.sales);
+
+  // Set up periodic check for notifications (every 5 minutes)
+  setInterval(() => {
+    notificationStore.checkLowStock(dataStore.items);
+    notificationStore.checkRecentSales(dataStore.sales);
+  }, 5 * 60 * 1000);
+});
+
+const menuItems = computed(() => [
   {
     title: "Dashboard",
     icon: "mdi-view-dashboard-outline",
@@ -207,7 +229,7 @@ const menuItems = [
     icon: "mdi-package-variant-closed",
     to: "/admin/items",
     subtitle: "Product Management",
-    badge: "125",
+    badge: dataStore.items.length.toString(),
     badgeColor: "success",
   },
   {
@@ -227,7 +249,10 @@ const menuItems = [
     icon: "mdi-chart-line",
     to: "/admin/sales",
     subtitle: "Transaction History",
-    badge: "New",
+    badge:
+      dataStore.sales.length > 0
+        ? dataStore.sales.length.toString()
+        : undefined,
     badgeColor: "error",
   },
   {
@@ -242,10 +267,10 @@ const menuItems = [
     to: "/admin/settings",
     subtitle: "App Configuration",
   },
-];
+]);
 
 const currentPageTitle = computed(() => {
-  const item = menuItems.find((item) => item.to === route.path);
+  const item = menuItems.value.find((item) => item.to === route.path);
   return item?.title || "Admin Panel";
 });
 
