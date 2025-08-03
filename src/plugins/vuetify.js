@@ -31,7 +31,7 @@ const darkTheme = {
     success: "#4CAF50",
     warning: "#FFC107",
     background: "#121212",
-    surface: "#212121",
+    surface: "#1d283b",
   },
 };
 

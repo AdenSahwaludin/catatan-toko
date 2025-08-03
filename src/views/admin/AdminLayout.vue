@@ -155,12 +155,6 @@
 
           <v-list min-width="200">
             <v-list-item
-              prepend-icon="mdi-account-outline"
-              title="Profile"
-              subtitle="Manage your account"
-              @click="router.push('/admin/profile')"
-            />
-            <v-list-item
               prepend-icon="mdi-cog-outline"
               title="Settings"
               subtitle="App preferences"

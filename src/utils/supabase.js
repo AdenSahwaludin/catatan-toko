@@ -9,8 +9,8 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     persistSession: true,
     detectSessionInUrl: true,
     storage: window.localStorage, // Use localStorage for persistence
-    storageKey: 'supabase.auth.token',
-  }
+    storageKey: "supabase.auth.token",
+  },
 });
 
 // Database helper functions
@@ -155,13 +155,105 @@ export const deleteSale = async (id, userId, isAdmin = false) => {
 };
 
 export const updateItemStock = async (itemId, quantitySold) => {
-  const { data, error } = await supabase.rpc("decrease_item_stock", {
-    item_id: itemId,
-    quantity: quantitySold,
-  });
+  console.log(
+    `Attempting to decrease stock for item ${itemId} by ${quantitySold}`
+  );
 
-  if (error) throw error;
-  return data;
+  try {
+    // Try to use the improved RPC function with row locking
+    const { data, error } = await supabase.rpc("decrease_item_stock_safe", {
+      item_id: itemId,
+      quantity: quantitySold,
+    });
+
+    if (error) {
+      console.error(`Stock update RPC failed for item ${itemId}:`, error);
+      // If RPC function doesn't exist, fall back to manual update
+      if (
+        error.message &&
+        error.message.includes("function decrease_item_stock_safe")
+      ) {
+        console.log("RPC function not found, falling back to manual update");
+        return await updateItemStockManual(itemId, quantitySold);
+      }
+      throw error;
+    }
+
+    console.log("RPC response:", data);
+
+    // Check if the operation was successful
+    if (!data.success) {
+      throw new Error(data.error);
+    }
+
+    console.log(`Stock update successful for item ${itemId}:`, data);
+    return data;
+  } catch (error) {
+    console.error("Error in updateItemStock:", error);
+    // If RPC fails, try manual update as fallback
+    if (error.message && error.message.includes("function")) {
+      console.log("Falling back to manual stock update");
+      return await updateItemStockManual(itemId, quantitySold);
+    }
+    throw error;
+  }
+};
+
+// Fallback manual update function
+const updateItemStockManual = async (itemId, quantitySold) => {
+  console.log(`Manual stock update for item ${itemId} by ${quantitySold}`);
+
+  // Get current item with locking (simulate FOR UPDATE with immediate check)
+  const { data: currentItem, error: fetchError } = await supabase
+    .from("items")
+    .select("id, name, stock")
+    .eq("id", itemId)
+    .single();
+
+  if (fetchError) {
+    throw new Error(`Gagal mengambil data barang: ${fetchError.message}`);
+  }
+
+  if (!currentItem) {
+    throw new Error(`Barang tidak ditemukan`);
+  }
+
+  if (currentItem.stock < quantitySold) {
+    throw new Error(
+      `Stok ${currentItem.name} tidak mencukupi. Tersedia: ${currentItem.stock}, Diminta: ${quantitySold}`
+    );
+  }
+
+  // Try to update with the exact conditions
+  const newStock = currentItem.stock - quantitySold;
+  const { data, error } = await supabase
+    .from("items")
+    .update({ stock: newStock })
+    .eq("id", itemId)
+    .eq("stock", currentItem.stock) // Optimistic locking
+    .select();
+
+  if (error) {
+    throw error;
+  }
+
+  if (!data || data.length === 0) {
+    // If no rows were updated, it means someone else changed the stock
+    const { data: updatedItem } = await supabase
+      .from("items")
+      .select("stock")
+      .eq("id", itemId)
+      .single();
+
+    throw new Error(
+      `Stok sudah berubah. Stok saat ini: ${
+        updatedItem?.stock || 0
+      }. Silakan refresh dan coba lagi.`
+    );
+  }
+
+  console.log(`Manual stock update successful:`, data[0]);
+  return data[0];
 };
 
 export const getUsers = async (role = null) => {

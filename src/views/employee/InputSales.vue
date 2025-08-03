@@ -169,9 +169,21 @@
       <v-card class="mb-4">
         <v-card-title class="d-flex align-center justify-space-between">
           <span>Keranjang Penjualan</span>
-          <v-chip color="primary" v-if="cart.length">
-            {{ cart.length }} item
-          </v-chip>
+          <div class="d-flex align-center gap-2">
+            <v-chip color="primary" v-if="cart.length">
+              {{ cart.length }} item
+            </v-chip>
+            <v-btn
+              v-if="cart.length > 0"
+              color="warning"
+              size="small"
+              variant="outlined"
+              @click="clearCart"
+              prepend-icon="mdi-cart-remove"
+            >
+              Clear
+            </v-btn>
+          </div>
         </v-card-title>
 
         <v-card-text>
@@ -362,12 +374,12 @@ const addToCart = (item) => {
     // Check if we can increase quantity
     const currentCartItem = cart.value[existingIndex];
     const newQuantity = currentCartItem.quantity + 1;
-    
+
     if (newQuantity > item.stock) {
       alert(`Stok "${item.name}" tidak mencukupi. Maksimal: ${item.stock}`);
       return;
     }
-    
+
     // Increase quantity if item already in cart
     updateCartQuantity(existingIndex, newQuantity);
   } else {
@@ -376,7 +388,7 @@ const addToCart = (item) => {
       alert(`Barang "${item.name}" sedang habis stok`);
       return;
     }
-    
+
     // Add new item to cart
     cart.value.push({
       ...item,
@@ -392,13 +404,15 @@ const updateCartQuantity = (index, newQuantity) => {
   }
 
   const cartItem = cart.value[index];
-  
+
   // Validate against available stock
   if (newQuantity > cartItem.stock) {
-    alert(`Stok "${cartItem.name}" tidak mencukupi. Maksimal: ${cartItem.stock}`);
+    alert(
+      `Stok "${cartItem.name}" tidak mencukupi. Maksimal: ${cartItem.stock}`
+    );
     return;
   }
-  
+
   cartItem.quantity = newQuantity;
 };
 
@@ -449,28 +463,41 @@ const submitItemsSale = async () => {
   saving.value = true;
 
   try {
+    // First, refresh data to get the most current stock
+    console.log("Refreshing items data before sale...");
+    await dataStore.fetchItems();
+
     // Validate stock availability before processing sale
     const stockErrors = [];
-    
+
     for (const cartItem of cart.value) {
       // Find current item data to check stock
-      const currentItem = dataStore.items.find(item => item.id === cartItem.id);
-      
+      const currentItem = dataStore.items.find(
+        (item) => item.id === cartItem.id
+      );
+
+      console.log(`Checking item ${cartItem.name}:`, {
+        cartQuantity: cartItem.quantity,
+        currentStock: currentItem?.stock,
+        itemId: cartItem.id,
+        itemExists: !!currentItem,
+      });
+
       if (!currentItem) {
         stockErrors.push(`Barang "${cartItem.name}" tidak ditemukan`);
         continue;
       }
-      
+
       if (currentItem.stock < cartItem.quantity) {
         stockErrors.push(
           `Stok "${cartItem.name}" tidak mencukupi. Tersedia: ${currentItem.stock}, Diminta: ${cartItem.quantity}`
         );
       }
     }
-    
+
     // If there are stock errors, show them and stop
     if (stockErrors.length > 0) {
-      alert(`Gagal menyimpan penjualan:\n\n${stockErrors.join('\n')}`);
+      alert(`Gagal menyimpan penjualan:\n\n${stockErrors.join("\n")}`);
       return;
     }
 
@@ -493,11 +520,16 @@ const submitItemsSale = async () => {
       is_deleted: false,
     };
 
+    console.log("Creating sale record...");
     // Save the sale first
     await createSale(saleData);
 
+    console.log("Updating stock for items...");
     // Update stock for each item
     for (const cartItem of cart.value) {
+      console.log(
+        `Updating stock for ${cartItem.name} (${cartItem.id}), quantity: ${cartItem.quantity}`
+      );
       await updateItemStock(cartItem.id, cartItem.quantity);
     }
 
@@ -511,20 +543,39 @@ const submitItemsSale = async () => {
     await dataStore.fetchItems();
   } catch (error) {
     console.error("Error saving items sale:", error);
-    
+
     // Show more specific error message
     let errorMessage = "Terjadi kesalahan saat menyimpan penjualan";
-    
-    if (error.message && error.message.includes("Stok tidak mencukupi")) {
-      errorMessage = "Stok barang tidak mencukupi atau barang tidak ditemukan. Silakan refresh halaman dan coba lagi.";
+
+    if (error.message) {
+      // Use the actual error message from our custom functions
+      if (
+        error.message.includes("tidak mencukupi") ||
+        error.message.includes("sudah tidak mencukupi")
+      ) {
+        errorMessage =
+          error.message + "\n\nData akan diperbarui secara otomatis.";
+      } else if (error.message.includes("tidak ditemukan")) {
+        errorMessage = error.message;
+      } else {
+        errorMessage = `Error: ${error.message}`;
+      }
     } else if (error.code === "P0001") {
-      errorMessage = error.message || "Validasi database gagal";
+      errorMessage =
+        "Validasi database gagal. Silakan refresh data dan coba lagi.";
     }
-    
+
     alert(errorMessage);
+
+    // Auto-refresh data after error
+    await dataStore.fetchItems();
   } finally {
     saving.value = false;
   }
+};
+
+const clearCart = () => {
+  cart.value = [];
 };
 
 const refreshItems = async () => {
