@@ -13,20 +13,20 @@ export const useAuthStore = defineStore("auth", () => {
 
   // Save user to localStorage for persistence
   const saveUserToStorage = (userData) => {
-    localStorage.setItem('user', JSON.stringify(userData));
-    localStorage.setItem('lastLoginTime', Date.now().toString());
+    localStorage.setItem("user", JSON.stringify(userData));
+    localStorage.setItem("lastLoginTime", Date.now().toString());
   };
 
   // Load user from localStorage
   const loadUserFromStorage = () => {
     try {
-      const savedUser = localStorage.getItem('user');
-      const lastLoginTime = localStorage.getItem('lastLoginTime');
-      
+      const savedUser = localStorage.getItem("user");
+      const lastLoginTime = localStorage.getItem("lastLoginTime");
+
       if (savedUser && lastLoginTime) {
         const timeDiff = Date.now() - parseInt(lastLoginTime);
         const oneWeek = 7 * 24 * 60 * 60 * 1000; // 1 week in milliseconds
-        
+
         // If less than 1 week, restore user
         if (timeDiff < oneWeek) {
           user.value = JSON.parse(savedUser);
@@ -45,8 +45,8 @@ export const useAuthStore = defineStore("auth", () => {
 
   // Clear user from localStorage
   const clearUserFromStorage = () => {
-    localStorage.removeItem('user');
-    localStorage.removeItem('lastLoginTime');
+    localStorage.removeItem("user");
+    localStorage.removeItem("lastLoginTime");
   };
 
   const signIn = async (email, password, rememberMe = true) => {

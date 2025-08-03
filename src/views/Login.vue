@@ -155,7 +155,11 @@ const handleLogin = async () => {
   loading.value = true;
   error.value = "";
 
-  const result = await authStore.signIn(email.value, password.value, rememberMe.value);
+  const result = await authStore.signIn(
+    email.value,
+    password.value,
+    rememberMe.value
+  );
 
   if (result.success) {
     // Redirect based on role

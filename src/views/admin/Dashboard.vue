@@ -38,7 +38,7 @@
           rounded="xl"
           elevation="0"
           @click="handleStatClick(stat)"
-          style="cursor: pointer;"
+          style="cursor: pointer"
         >
           <v-card-text class="pa-6">
             <div class="d-flex align-center justify-space-between mb-4">
@@ -223,29 +223,34 @@ const currentDate = computed(() => {
 const statsCards = computed(() => {
   const totalItems = dataStore.items.length;
   const totalSales = dataStore.sales.length;
-  
+
   // Calculate total revenue from sales
   const totalRevenue = dataStore.sales.reduce((sum, sale) => {
     return sum + (sale.total || 0);
   }, 0);
-  
+
   // Format currency
   const formatCurrency = (amount) => {
-    return new Intl.NumberFormat('id-ID', {
-      style: 'currency',
-      currency: 'IDR',
-      minimumFractionDigits: 0
+    return new Intl.NumberFormat("id-ID", {
+      style: "currency",
+      currency: "IDR",
+      minimumFractionDigits: 0,
     }).format(amount);
   };
 
   // Count low stock items (stock < 10)
-  const lowStockItems = dataStore.items.filter(item => item.stock < 10).length;
-  
+  const lowStockItems = dataStore.items.filter(
+    (item) => item.stock < 10
+  ).length;
+
   return [
     {
       title: "Total Products",
       value: totalItems.toString(),
-      subtitle: lowStockItems > 0 ? `${lowStockItems} items low stock` : "Stock levels good",
+      subtitle:
+        lowStockItems > 0
+          ? `${lowStockItems} items low stock`
+          : "Stock levels good",
       icon: "mdi-package-variant-closed",
       color: "primary",
       trend: lowStockItems > 0 ? "down" : "up",
@@ -284,28 +289,28 @@ const statsCards = computed(() => {
 // Generate real recent activities from sales data
 const recentActivities = computed(() => {
   const activities = [];
-  
+
   // Get recent sales (last 5)
   const recentSales = dataStore.sales
     .slice(-5)
     .reverse()
-    .map(sale => ({
+    .map((sale) => ({
       title: "Sale Recorded",
-      description: `Sale #${sale.id} - ${new Intl.NumberFormat('id-ID', {
-        style: 'currency',
-        currency: 'IDR',
-        minimumFractionDigits: 0
+      description: `Sale #${sale.id} - ${new Intl.NumberFormat("id-ID", {
+        style: "currency",
+        currency: "IDR",
+        minimumFractionDigits: 0,
       }).format(sale.total)}`,
-      time: new Date(sale.created_at).toLocaleString('id-ID'),
+      time: new Date(sale.created_at).toLocaleString("id-ID"),
       icon: "mdi-cash-register",
       color: "success",
     }));
-  
+
   activities.push(...recentSales);
-  
+
   // Add low stock alerts
-  const lowStockItems = dataStore.items.filter(item => item.stock < 10);
-  lowStockItems.slice(0, 2).forEach(item => {
+  const lowStockItems = dataStore.items.filter((item) => item.stock < 10);
+  lowStockItems.slice(0, 2).forEach((item) => {
     activities.push({
       title: "Low Stock Alert",
       description: `${item.name} - Only ${item.stock} left`,
@@ -314,18 +319,18 @@ const recentActivities = computed(() => {
       color: "warning",
     });
   });
-  
+
   // If no real activities, show system messages
   if (activities.length === 0) {
     activities.push({
       title: "System Ready",
       description: "Dashboard loaded successfully",
-      time: new Date().toLocaleTimeString('id-ID'),
+      time: new Date().toLocaleTimeString("id-ID"),
       icon: "mdi-check-circle",
       color: "success",
     });
   }
-  
+
   return activities.slice(0, 5); // Limit to 5 activities
 });
 
@@ -357,29 +362,29 @@ const quickActions = ref([
 ]);
 
 const handleQuickAction = (action) => {
-  console.log('Quick action clicked:', action);
+  console.log("Quick action clicked:", action);
   try {
     router.push(action.to);
   } catch (error) {
-    console.error('Router navigation error:', error);
+    console.error("Router navigation error:", error);
   }
 };
 
 const handleStatClick = (stat) => {
-  console.log('Stat card clicked:', stat.title);
+  console.log("Stat card clicked:", stat.title);
   // Navigate based on stat type
-  switch(stat.title) {
-    case 'Total Products':
-      router.push('/admin/items');
+  switch (stat.title) {
+    case "Total Products":
+      router.push("/admin/items");
       break;
-    case 'Total Sales':
-      router.push('/admin/sales');
+    case "Total Sales":
+      router.push("/admin/sales");
       break;
-    case 'Revenue':
-      router.push('/admin/reports');
+    case "Revenue":
+      router.push("/admin/reports");
       break;
-    case 'Active Staff':
-      router.push('/admin/employees');
+    case "Active Staff":
+      router.push("/admin/employees");
       break;
   }
 };
@@ -390,7 +395,7 @@ onMounted(async () => {
     dataStore.fetchItems(),
     dataStore.fetchSales(),
     dataStore.fetchCategories(),
-    dataStore.fetchEmployees()
+    dataStore.fetchEmployees(),
   ]);
 });
 </script>
