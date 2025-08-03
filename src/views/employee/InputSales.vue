@@ -10,21 +10,30 @@
     <v-card class="mb-4">
       <v-card-text>
         <v-row>
-          <v-col cols="12" md="6">
+          <v-col cols="12">
             <v-btn-toggle
               v-model="inputMode"
               color="primary"
               mandatory
               variant="outlined"
               divided
+              class="w-100"
             >
-              <v-btn value="manual">
-                <v-icon start>mdi-calculator</v-icon>
-                Input Manual
+              <v-btn value="manual" class="flex-grow-1">
+                <v-icon start class="d-none d-sm-inline">mdi-calculator</v-icon>
+                <v-icon start class="d-inline d-sm-none">mdi-calculator</v-icon>
+                <span class="d-none d-sm-inline">Input Manual</span>
+                <span class="d-inline d-sm-none">Manual</span>
               </v-btn>
-              <v-btn value="items">
-                <v-icon start>mdi-package-variant</v-icon>
-                Berdasarkan Barang
+              <v-btn value="items" class="flex-grow-1">
+                <v-icon start class="d-none d-sm-inline"
+                  >mdi-package-variant</v-icon
+                >
+                <v-icon start class="d-inline d-sm-none"
+                  >mdi-package-variant</v-icon
+                >
+                <span class="d-none d-sm-inline">Berdasarkan Barang</span>
+                <span class="d-inline d-sm-none">Barang</span>
               </v-btn>
             </v-btn-toggle>
           </v-col>
