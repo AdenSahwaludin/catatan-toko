@@ -158,12 +158,15 @@
               prepend-icon="mdi-account-outline"
               title="Profile"
               subtitle="Manage your account"
+              @click="router.push('/admin/profile')"
             />
             <v-list-item
               prepend-icon="mdi-cog-outline"
               title="Settings"
               subtitle="App preferences"
+              @click="router.push('/admin/settings')"
             />
+
             <v-divider />
             <v-list-item
               prepend-icon="mdi-logout"

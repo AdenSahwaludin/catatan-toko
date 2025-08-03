@@ -82,7 +82,7 @@
         <v-card-text>
           <!-- Search and Filters -->
           <v-row class="mb-4">
-            <v-col cols="12" md="6">
+            <v-col cols="12" md="5">
               <v-text-field
                 v-model="itemSearch"
                 label="Cari barang..."
@@ -102,12 +102,24 @@
                 clearable
               />
             </v-col>
-            <v-col cols="12" md="3">
+            <v-col cols="12" md="2">
               <v-switch
                 v-model="showAvailableOnly"
                 label="Stok tersedia"
                 color="primary"
               />
+            </v-col>
+            <v-col cols="12" md="2">
+              <v-btn
+                @click="refreshItems"
+                :loading="loadingItems"
+                color="primary"
+                variant="outlined"
+                prepend-icon="mdi-refresh"
+                block
+              >
+                Refresh
+              </v-btn>
             </v-col>
           </v-row>
 
@@ -347,9 +359,24 @@ const addToCart = (item) => {
   );
 
   if (existingIndex >= 0) {
+    // Check if we can increase quantity
+    const currentCartItem = cart.value[existingIndex];
+    const newQuantity = currentCartItem.quantity + 1;
+    
+    if (newQuantity > item.stock) {
+      alert(`Stok "${item.name}" tidak mencukupi. Maksimal: ${item.stock}`);
+      return;
+    }
+    
     // Increase quantity if item already in cart
-    updateCartQuantity(existingIndex, cart.value[existingIndex].quantity + 1);
+    updateCartQuantity(existingIndex, newQuantity);
   } else {
+    // Check stock before adding new item
+    if (item.stock <= 0) {
+      alert(`Barang "${item.name}" sedang habis stok`);
+      return;
+    }
+    
     // Add new item to cart
     cart.value.push({
       ...item,
@@ -365,9 +392,14 @@ const updateCartQuantity = (index, newQuantity) => {
   }
 
   const cartItem = cart.value[index];
-  if (newQuantity <= cartItem.stock) {
-    cartItem.quantity = newQuantity;
+  
+  // Validate against available stock
+  if (newQuantity > cartItem.stock) {
+    alert(`Stok "${cartItem.name}" tidak mencukupi. Maksimal: ${cartItem.stock}`);
+    return;
   }
+  
+  cartItem.quantity = newQuantity;
 };
 
 const removeFromCart = (index) => {
@@ -417,6 +449,31 @@ const submitItemsSale = async () => {
   saving.value = true;
 
   try {
+    // Validate stock availability before processing sale
+    const stockErrors = [];
+    
+    for (const cartItem of cart.value) {
+      // Find current item data to check stock
+      const currentItem = dataStore.items.find(item => item.id === cartItem.id);
+      
+      if (!currentItem) {
+        stockErrors.push(`Barang "${cartItem.name}" tidak ditemukan`);
+        continue;
+      }
+      
+      if (currentItem.stock < cartItem.quantity) {
+        stockErrors.push(
+          `Stok "${cartItem.name}" tidak mencukupi. Tersedia: ${currentItem.stock}, Diminta: ${cartItem.quantity}`
+        );
+      }
+    }
+    
+    // If there are stock errors, show them and stop
+    if (stockErrors.length > 0) {
+      alert(`Gagal menyimpan penjualan:\n\n${stockErrors.join('\n')}`);
+      return;
+    }
+
     const saleData = {
       employee_id: authStore.user.id,
       total: cartTotal.value,
@@ -436,6 +493,7 @@ const submitItemsSale = async () => {
       is_deleted: false,
     };
 
+    // Save the sale first
     await createSale(saleData);
 
     // Update stock for each item
@@ -449,13 +507,36 @@ const submitItemsSale = async () => {
     // Reset cart
     cart.value = [];
 
-    // Refresh items data
+    // Refresh items data to get updated stock
     await dataStore.fetchItems();
   } catch (error) {
     console.error("Error saving items sale:", error);
-    alert("Terjadi kesalahan saat menyimpan penjualan");
+    
+    // Show more specific error message
+    let errorMessage = "Terjadi kesalahan saat menyimpan penjualan";
+    
+    if (error.message && error.message.includes("Stok tidak mencukupi")) {
+      errorMessage = "Stok barang tidak mencukupi atau barang tidak ditemukan. Silakan refresh halaman dan coba lagi.";
+    } else if (error.code === "P0001") {
+      errorMessage = error.message || "Validasi database gagal";
+    }
+    
+    alert(errorMessage);
   } finally {
     saving.value = false;
+  }
+};
+
+const refreshItems = async () => {
+  loadingItems.value = true;
+  try {
+    await dataStore.fetchItems();
+    console.log("Items data refreshed");
+  } catch (error) {
+    console.error("Error refreshing items:", error);
+    alert("Gagal memuat ulang data barang");
+  } finally {
+    loadingItems.value = false;
   }
 };
 
