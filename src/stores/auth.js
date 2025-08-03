@@ -11,7 +11,45 @@ export const useAuthStore = defineStore("auth", () => {
   const isAdmin = computed(() => user.value?.role === "admin");
   const isEmployee = computed(() => user.value?.role === "employee");
 
-  const signIn = async (email, password) => {
+  // Save user to localStorage for persistence
+  const saveUserToStorage = (userData) => {
+    localStorage.setItem('user', JSON.stringify(userData));
+    localStorage.setItem('lastLoginTime', Date.now().toString());
+  };
+
+  // Load user from localStorage
+  const loadUserFromStorage = () => {
+    try {
+      const savedUser = localStorage.getItem('user');
+      const lastLoginTime = localStorage.getItem('lastLoginTime');
+      
+      if (savedUser && lastLoginTime) {
+        const timeDiff = Date.now() - parseInt(lastLoginTime);
+        const oneWeek = 7 * 24 * 60 * 60 * 1000; // 1 week in milliseconds
+        
+        // If less than 1 week, restore user
+        if (timeDiff < oneWeek) {
+          user.value = JSON.parse(savedUser);
+          return true;
+        } else {
+          // Clear expired session
+          clearUserFromStorage();
+        }
+      }
+    } catch (err) {
+      console.error("Error loading user from storage:", err);
+      clearUserFromStorage();
+    }
+    return false;
+  };
+
+  // Clear user from localStorage
+  const clearUserFromStorage = () => {
+    localStorage.removeItem('user');
+    localStorage.removeItem('lastLoginTime');
+  };
+
+  const signIn = async (email, password, rememberMe = true) => {
     try {
       loading.value = true;
       error.value = null;
@@ -43,14 +81,19 @@ export const useAuthStore = defineStore("auth", () => {
 
       console.log("Profile fetch result:", { profile, profileError });
 
-      console.log("Profile response:", { profile, profileError });
-
       if (profileError) throw profileError;
 
-      user.value = {
+      const userData = {
         ...data.user,
         role: profile.role,
       };
+
+      user.value = userData;
+
+      // Save to localStorage if rememberMe is true
+      if (rememberMe) {
+        saveUserToStorage(userData);
+      }
 
       console.log("User set:", user.value);
 
@@ -104,6 +147,7 @@ export const useAuthStore = defineStore("auth", () => {
       if (error) throw error;
 
       user.value = null;
+      clearUserFromStorage(); // Clear localStorage
       return { success: true };
     } catch (err) {
       error.value = err.message;
@@ -115,6 +159,13 @@ export const useAuthStore = defineStore("auth", () => {
 
   const checkUser = async () => {
     try {
+      // First try to load from localStorage
+      if (loadUserFromStorage()) {
+        console.log("User loaded from localStorage:", user.value);
+        return;
+      }
+
+      // If not in localStorage, check Supabase session
       const {
         data: { session },
       } = await supabase.auth.getSession();
@@ -127,15 +178,23 @@ export const useAuthStore = defineStore("auth", () => {
           .single();
 
         if (profile) {
-          user.value = {
+          const userData = {
             ...session.user,
             role: profile.role,
           };
+          user.value = userData;
+          saveUserToStorage(userData); // Save to localStorage
         }
       }
     } catch (err) {
       console.error("Error checking user:", err);
+      clearUserFromStorage();
     }
+  };
+
+  // Initialize user on store creation
+  const initAuth = () => {
+    loadUserFromStorage();
   };
 
   return {
@@ -149,5 +208,7 @@ export const useAuthStore = defineStore("auth", () => {
     signUp,
     signOut,
     checkUser,
+    initAuth,
+    clearUserFromStorage,
   };
 });

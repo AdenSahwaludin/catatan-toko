@@ -79,6 +79,17 @@
                     />
                   </div>
 
+                  <!-- Remember Me Checkbox -->
+                  <div class="input-group mb-4">
+                    <v-checkbox
+                      v-model="rememberMe"
+                      label="Remember me for 1 week"
+                      color="primary"
+                      hide-details
+                      :disabled="loading || registering"
+                    />
+                  </div>
+
                   <!-- Error alert dengan style modern -->
                   <v-slide-y-transition>
                     <v-alert
@@ -131,6 +142,7 @@ const authStore = useAuthStore();
 
 const email = ref("");
 const password = ref("");
+const rememberMe = ref(true); // Default to true for convenience
 const showPassword = ref(false);
 const loading = ref(false);
 const error = ref("");
@@ -143,7 +155,7 @@ const handleLogin = async () => {
   loading.value = true;
   error.value = "";
 
-  const result = await authStore.signIn(email.value, password.value);
+  const result = await authStore.signIn(email.value, password.value, rememberMe.value);
 
   if (result.success) {
     // Redirect based on role
