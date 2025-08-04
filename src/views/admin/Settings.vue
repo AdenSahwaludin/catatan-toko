@@ -234,13 +234,16 @@
               <strong>Field yang diperlukan:</strong>
               <ul class="ml-4 mt-2">
                 <li><code>nama</code> - Nama barang (wajib)</li>
-                <li><code>kategori</code> - Nama kategori (wajib, akan dibuat otomatis jika belum ada)</li>
+                <li>
+                  <code>kategori</code> - Nama kategori (wajib, akan dibuat
+                  otomatis jika belum ada)
+                </li>
                 <li><code>merek</code> - Merek barang (opsional)</li>
                 <li><code>model</code> - Model barang (opsional)</li>
                 <li><code>harga</code> - Harga dalam angka (wajib)</li>
                 <li><code>stok</code> - Jumlah stok dalam angka (wajib)</li>
               </ul>
-              
+
               <div class="d-flex align-center mt-3">
                 <v-btn
                   color="primary"
@@ -276,7 +279,7 @@
         <v-list density="compact">
           <v-list-item>
             <v-list-item-title>Versi Aplikasi</v-list-item-title>
-            <v-list-item-subtitle>v1.1.2</v-list-item-subtitle>
+            <v-list-item-subtitle>v1.1.3</v-list-item-subtitle>
           </v-list-item>
 
           <v-list-item>
@@ -487,8 +490,8 @@ const exportAllData = async () => {
 const handleFileImport = (event) => {
   // This would handle file import in a real application
   notificationStore.addNotification({
-    type: 'info',
-    message: 'Fitur import file akan tersedia di versi mendatang'
+    type: "info",
+    message: "Fitur import file akan tersedia di versi mendatang",
   });
 };
 
@@ -502,7 +505,7 @@ const validateJsonData = () => {
     }
 
     const data = JSON.parse(jsonImportData.value);
-    
+
     if (!Array.isArray(data)) {
       validationMessage.value = "Data harus berupa array JSON";
       isJsonValid.value = false;
@@ -523,22 +526,36 @@ const validateJsonData = () => {
 
     data.forEach((item, index) => {
       const itemErrors = [];
-      
+
       // Required fields validation
-      if (!item.nama || typeof item.nama !== 'string') {
-        itemErrors.push(`Item ${index + 1}: 'nama' wajib diisi dan harus berupa text`);
+      if (!item.nama || typeof item.nama !== "string") {
+        itemErrors.push(
+          `Item ${index + 1}: 'nama' wajib diisi dan harus berupa text`
+        );
       }
-      
-      if (!item.kategori || typeof item.kategori !== 'string') {
-        itemErrors.push(`Item ${index + 1}: 'kategori' wajib diisi dan harus berupa text`);
+
+      if (!item.kategori || typeof item.kategori !== "string") {
+        itemErrors.push(
+          `Item ${index + 1}: 'kategori' wajib diisi dan harus berupa text`
+        );
       }
-      
-      if (!item.harga || typeof item.harga !== 'number' || item.harga <= 0) {
-        itemErrors.push(`Item ${index + 1}: 'harga' wajib diisi dan harus berupa angka positif`);
+
+      if (!item.harga || typeof item.harga !== "number" || item.harga <= 0) {
+        itemErrors.push(
+          `Item ${
+            index + 1
+          }: 'harga' wajib diisi dan harus berupa angka positif`
+        );
       }
-      
-      if (item.stok === undefined || typeof item.stok !== 'number' || item.stok < 0) {
-        itemErrors.push(`Item ${index + 1}: 'stok' wajib diisi dan harus berupa angka >= 0`);
+
+      if (
+        item.stok === undefined ||
+        typeof item.stok !== "number" ||
+        item.stok < 0
+      ) {
+        itemErrors.push(
+          `Item ${index + 1}: 'stok' wajib diisi dan harus berupa angka >= 0`
+        );
       }
 
       if (itemErrors.length > 0) {
@@ -551,13 +568,19 @@ const validateJsonData = () => {
           merek: item.merek || "",
           model: item.model || "",
           harga: item.harga,
-          stok: item.stok
+          stok: item.stok,
         });
       }
     });
 
     if (errors.length > 0) {
-      validationMessage.value = `Ditemukan ${errors.length} error:\n\n${errors.slice(0, 5).join('\n')}${errors.length > 5 ? '\n... dan ' + (errors.length - 5) + ' error lainnya' : ''}`;
+      validationMessage.value = `Ditemukan ${errors.length} error:\n\n${errors
+        .slice(0, 5)
+        .join("\n")}${
+        errors.length > 5
+          ? "\n... dan " + (errors.length - 5) + " error lainnya"
+          : ""
+      }`;
       isJsonValid.value = false;
       parsedJsonData.value = [];
     } else {
@@ -565,7 +588,6 @@ const validateJsonData = () => {
       isJsonValid.value = true;
       parsedJsonData.value = validatedData;
     }
-
   } catch (error) {
     validationMessage.value = `JSON tidak valid: ${error.message}`;
     isJsonValid.value = false;
@@ -581,26 +603,73 @@ const importJsonData = async () => {
   importing.value = true;
 
   try {
-    // Get existing categories
-    await dataStore.fetchCategories();
+    // Get existing data
+    await Promise.all([dataStore.fetchCategories(), dataStore.fetchItems()]);
+
     const existingCategories = new Map(
-      dataStore.categories.map(cat => [cat.name.toLowerCase(), cat])
+      dataStore.categories.map((cat) => [cat.name.toLowerCase(), cat])
+    );
+
+    const existingItems = new Set(
+      dataStore.items.map((item) => item.name.toLowerCase())
     );
 
     // Track new categories to create
     const newCategories = new Set();
     const categoriesToCreate = [];
 
-    // First pass: identify new categories
-    parsedJsonData.value.forEach(item => {
-      const categoryName = item.kategori.toLowerCase();
-      if (!existingCategories.has(categoryName) && !newCategories.has(categoryName)) {
-        newCategories.add(categoryName);
-        categoriesToCreate.push({
-          name: item.kategori
-        });
+    // Check for duplicates and prepare data
+    const duplicateItems = [];
+    const validItems = [];
+
+    parsedJsonData.value.forEach((item) => {
+      // Check for duplicate item names
+      if (existingItems.has(item.nama.toLowerCase())) {
+        duplicateItems.push(item.nama);
+      } else {
+        validItems.push(item);
+        // Track category
+        const categoryName = item.kategori.toLowerCase();
+        if (
+          !existingCategories.has(categoryName) &&
+          !newCategories.has(categoryName)
+        ) {
+          newCategories.add(categoryName);
+          categoriesToCreate.push({
+            name: item.kategori,
+          });
+        }
       }
     });
+
+    // Show duplicate warning if any
+    if (duplicateItems.length > 0) {
+      const shouldContinue = confirm(
+        `Ditemukan ${
+          duplicateItems.length
+        } barang dengan nama yang sudah ada:\n\n${duplicateItems
+          .slice(0, 5)
+          .join("\n")}${
+          duplicateItems.length > 5
+            ? "\n... dan " + (duplicateItems.length - 5) + " lainnya"
+            : ""
+        }\n\nBarang duplikat akan dilewati. Lanjutkan import?`
+      );
+
+      if (!shouldContinue) {
+        importing.value = false;
+        return;
+      }
+    }
+
+    if (validItems.length === 0) {
+      notificationStore.addNotification({
+        type: "warning",
+        message: "Semua barang sudah ada. Tidak ada yang diimport.",
+      });
+      importing.value = false;
+      return;
+    }
 
     // Create new categories
     const categoryMap = new Map(existingCategories);
@@ -608,19 +677,19 @@ const importJsonData = async () => {
       try {
         const newCategory = await createCategory(categoryData);
         categoryMap.set(categoryData.name.toLowerCase(), newCategory);
-        console.log('Created category:', newCategory.name);
+        console.log("Created category:", newCategory.name);
       } catch (error) {
-        console.error('Error creating category:', categoryData.name, error);
+        console.error("Error creating category:", categoryData.name, error);
         throw error;
       }
     }
 
-    // Second pass: create items
+    // Create items
     let successCount = 0;
     let errorCount = 0;
     const errors = [];
 
-    for (const item of parsedJsonData.value) {
+    for (const item of validItems) {
       try {
         const category = categoryMap.get(item.kategori.toLowerCase());
         if (!category) {
@@ -633,39 +702,45 @@ const importJsonData = async () => {
           brand: item.merek || "",
           model: item.model || "",
           price: item.harga,
-          stock: item.stok
+          stock: item.stok,
         };
 
         await createItem(itemData);
         successCount++;
-        console.log('Created item:', item.nama);
+        console.log("Created item:", item.nama);
       } catch (error) {
         errorCount++;
         errors.push(`${item.nama}: ${error.message}`);
-        console.error('Error creating item:', item.nama, error);
+        console.error("Error creating item:", item.nama, error);
       }
     }
 
     // Refresh data
-    await Promise.all([
-      dataStore.fetchCategories(),
-      dataStore.fetchItems()
-    ]);
+    await Promise.all([dataStore.fetchCategories(), dataStore.fetchItems()]);
 
     // Show results
+    let resultMessage = "";
     if (successCount > 0) {
+      resultMessage = `Berhasil import ${successCount} item`;
+      if (newCategories.size > 0) {
+        resultMessage += ` dan ${newCategories.size} kategori baru`;
+      }
+      if (duplicateItems.length > 0) {
+        resultMessage += ` (${duplicateItems.length} duplikat dilewati)`;
+      }
+
       notificationStore.addNotification({
-        type: 'success',
-        message: `Berhasil import ${successCount} item${newCategories.size > 0 ? ` dan ${newCategories.size} kategori baru` : ''}`
+        type: "success",
+        message: resultMessage,
       });
     }
 
     if (errorCount > 0) {
       notificationStore.addNotification({
-        type: 'warning', 
-        message: `${errorCount} item gagal diimport. Periksa console untuk detail.`
+        type: "warning",
+        message: `${errorCount} item gagal diimport. Periksa console untuk detail.`,
       });
-      console.warn('Import errors:', errors);
+      console.warn("Import errors:", errors);
     }
 
     // Clear form if all successful
@@ -675,12 +750,11 @@ const importJsonData = async () => {
       isJsonValid.value = false;
       validationMessage.value = "";
     }
-
   } catch (error) {
     console.error("Error importing JSON data:", error);
     notificationStore.addNotification({
-      type: 'error',
-      message: `Gagal import data: ${error.message}`
+      type: "error",
+      message: `Gagal import data: ${error.message}`,
     });
   } finally {
     importing.value = false;
@@ -693,8 +767,8 @@ const clearJsonData = () => {
   isJsonValid.value = false;
   validationMessage.value = "";
   notificationStore.addNotification({
-    type: 'info',
-    message: 'Data JSON telah direset'
+    type: "info",
+    message: "Data JSON telah direset",
   });
 };
 
@@ -737,14 +811,14 @@ const copyExampleJson = async () => {
   try {
     await navigator.clipboard.writeText(exampleJsonData);
     notificationStore.addNotification({
-      type: 'success',
-      message: 'Contoh data berhasil disalin ke clipboard'
+      type: "success",
+      message: "Contoh data berhasil disalin ke clipboard",
     });
   } catch (error) {
-    console.error('Failed to copy:', error);
+    console.error("Failed to copy:", error);
     notificationStore.addNotification({
-      type: 'error',
-      message: 'Gagal menyalin data. Silakan copy manual.'
+      type: "error",
+      message: "Gagal menyalin data. Silakan copy manual.",
     });
   }
 };
@@ -756,8 +830,9 @@ const useExampleJson = () => {
     validateJsonData();
   }, 100);
   notificationStore.addNotification({
-    type: 'info',
-    message: 'Contoh data telah dimasukkan. Klik "Validasi Data" untuk memeriksa.'
+    type: "info",
+    message:
+      'Contoh data telah dimasukkan. Klik "Validasi Data" untuk memeriksa.',
   });
 };
 
