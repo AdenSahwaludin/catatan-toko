@@ -91,7 +91,7 @@
         <v-card-text>
           <!-- Search and Filters -->
           <v-row class="mb-4">
-            <v-col cols="12" md="5">
+            <v-col cols="12" md="4">
               <v-text-field
                 v-model="itemSearch"
                 label="Cari barang..."
@@ -118,6 +118,16 @@
                 color="primary"
               />
             </v-col>
+            <v-col cols="12" md="1" class="d-block d-md-none">
+              <v-select
+                v-model="itemsPerPage"
+                :items="[12, 24, 48, 96]"
+                label="Per halaman"
+                variant="outlined"
+                density="compact"
+                hide-details
+              />
+            </v-col>
             <v-col cols="12" md="2">
               <v-btn
                 @click="refreshItems"
@@ -129,6 +139,48 @@
               >
                 Refresh
               </v-btn>
+            </v-col>
+          </v-row>
+
+          <!-- Stats and Clear Filters -->
+          <v-row class="mb-2">
+            <v-col cols="12">
+              <div class="d-flex justify-space-between align-center">
+                <div class="d-flex align-center flex-wrap">
+                  <v-chip color="info" variant="tonal" class="mr-2 mb-1">
+                    Total: {{ filteredItems.length }} barang
+                  </v-chip>
+                  <v-chip
+                    color="primary"
+                    variant="tonal"
+                    class="mr-2 mb-1"
+                    v-if="filteredItems.length !== totalItems"
+                  >
+                    Ditampilkan:
+                    {{ Math.min(paginatedItems.length, itemsPerPage) }}
+                  </v-chip>
+                  <v-chip
+                    color="success"
+                    variant="tonal"
+                    class="mb-1"
+                    v-if="totalPages > 1"
+                  >
+                    Halaman {{ currentPage }} dari {{ totalPages }}
+                  </v-chip>
+                </div>
+
+                <v-btn
+                  v-if="hasActiveFilters"
+                  color="warning"
+                  variant="outlined"
+                  prepend-icon="mdi-filter-remove"
+                  @click="clearFilters"
+                  size="small"
+                  class="mb-1"
+                >
+                  Hapus Filter
+                </v-btn>
+              </div>
             </v-col>
           </v-row>
 
@@ -187,9 +239,34 @@
             </v-card>
           </div>
           <div class="d-block d-md-none">
-            <v-row>
+            <!-- Loading State Mobile -->
+            <div v-if="loadingItems" class="text-center py-8">
+              <v-progress-circular indeterminate color="primary" size="64" />
+              <div class="text-h6 mt-3">Memuat barang...</div>
+            </div>
+
+            <!-- Empty State Mobile -->
+            <div
+              v-else-if="filteredItems.length === 0"
+              class="text-center py-8"
+            >
+              <v-icon size="80" color="grey-lighten-2"
+                >mdi-package-variant-closed</v-icon
+              >
+              <div class="text-h6 mt-3 mb-2">Tidak Ada Barang</div>
+              <div class="text-body-2 text-medium-emphasis">
+                {{
+                  hasActiveFilters
+                    ? "Coba ubah filter pencarian"
+                    : "Belum ada barang yang tersedia"
+                }}
+              </div>
+            </div>
+
+            <!-- Items Grid Mobile -->
+            <v-row v-else>
               <v-col
-                v-for="item in filteredItems"
+                v-for="item in paginatedItems"
                 :key="item.id"
                 cols="6"
                 sm="4"
@@ -265,18 +342,56 @@
                 </v-card>
               </v-col>
             </v-row>
+
+            <!-- Mobile Pagination -->
+            <div v-if="totalPages > 1" class="d-flex justify-center mt-4">
+              <v-pagination
+                v-model="currentPage"
+                :length="totalPages"
+                :total-visible="5"
+                density="compact"
+                color="primary"
+              />
+            </div>
           </div>
 
           <!-- Items List Desktop -->
           <div class="d-none d-md-block">
+            <!-- Loading State Desktop -->
+            <div v-if="loadingItems" class="text-center py-8">
+              <v-progress-circular indeterminate color="primary" size="64" />
+              <div class="text-h6 mt-3">Memuat barang...</div>
+            </div>
+
+            <!-- Empty State Desktop -->
+            <div
+              v-else-if="filteredItems.length === 0"
+              class="text-center py-8"
+            >
+              <v-icon size="80" color="grey-lighten-2"
+                >mdi-package-variant-closed</v-icon
+              >
+              <div class="text-h6 mt-3 mb-2">Tidak Ada Barang</div>
+              <div class="text-body-2 text-medium-emphasis">
+                {{
+                  hasActiveFilters
+                    ? "Coba ubah filter pencarian"
+                    : "Belum ada barang yang tersedia"
+                }}
+              </div>
+            </div>
+
+            <!-- Data Table Desktop -->
             <v-data-table
+              v-else
               :headers="itemHeaders"
-              :items="filteredItems"
+              :items="paginatedItems"
               :loading="loadingItems"
               item-value="id"
               density="compact"
               @click:row="handleRowClick"
               class="clickable-table"
+              hide-default-footer
             >
               <template #item.price="{ item }">
                 {{ item.price ? formatCurrency(item.price) : "Rp 0" }}
@@ -322,6 +437,17 @@
                 </div>
               </template>
             </v-data-table>
+
+            <!-- Desktop Pagination -->
+            <div v-if="totalPages > 1" class="d-flex justify-center mt-4">
+              <v-pagination
+                v-model="currentPage"
+                :length="totalPages"
+                :total-visible="7"
+                density="comfortable"
+                color="primary"
+              />
+            </div>
           </div>
         </v-card-text>
       </v-card>
@@ -553,7 +679,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { useAuthStore } from "@/stores/auth";
 import { useDataStore } from "@/stores/data";
 import { useNotificationStore } from "@/stores/notifications";
@@ -568,6 +694,16 @@ const inputMode = ref("manual");
 const saving = ref(false);
 const loadingItems = ref(false);
 const successDialog = ref(false);
+
+// Pagination variables
+const currentPage = ref(1);
+const itemsPerPage = ref(24);
+const totalItems = ref(0);
+
+// Filter variables
+const itemSearch = ref("");
+const selectedCategory = ref("");
+const showAvailableOnly = ref(true);
 const lastSaleAmount = ref(0);
 
 // Manual input
@@ -575,10 +711,7 @@ const manualAmount = ref("");
 const manualNotes = ref("");
 const manualForm = ref();
 
-// Items input
-const itemSearch = ref("");
-const selectedCategory = ref("");
-const showAvailableOnly = ref(true);
+// Items input - cart
 const cart = ref([]);
 
 const itemHeaders = [
@@ -616,6 +749,7 @@ const clearFilters = () => {
   itemSearch.value = "";
   selectedCategory.value = "";
   showAvailableOnly.value = true;
+  currentPage.value = 1;
 };
 
 const categoryOptions = computed(() => [
@@ -628,6 +762,8 @@ const categoryOptions = computed(() => [
 
 const filteredItems = computed(() => {
   let items = [...dataStore.items];
+
+  totalItems.value = items.length;
 
   // Search filter
   if (itemSearch.value) {
@@ -650,6 +786,21 @@ const filteredItems = computed(() => {
   }
 
   return items;
+});
+
+// Computed for pagination
+const totalPages = computed(() => {
+  return Math.ceil(filteredItems.value.length / itemsPerPage.value);
+});
+
+const paginatedItems = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage.value;
+  const end = start + itemsPerPage.value;
+  return filteredItems.value.slice(start, end);
+});
+
+const hasActiveFilters = computed(() => {
+  return itemSearch.value || selectedCategory.value || !showAvailableOnly.value;
 });
 
 const cartTotal = computed(() => {
@@ -963,6 +1114,15 @@ const refreshItems = async () => {
     loadingItems.value = false;
   }
 };
+
+// Watchers for filter changes
+watch([itemSearch, selectedCategory, showAvailableOnly], () => {
+  currentPage.value = 1;
+});
+
+watch(itemsPerPage, () => {
+  currentPage.value = 1;
+});
 
 onMounted(async () => {
   // Load cart from session storage if available

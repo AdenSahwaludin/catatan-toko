@@ -122,11 +122,120 @@
 
     <!-- Sales Table -->
     <v-card>
+      <!-- Stats Summary -->
+      <v-card-text class="pb-0">
+        <v-row>
+          <v-col cols="12" class="d-flex justify-space-between align-center">
+            <div class="d-flex align-center">
+              <v-chip color="info" variant="tonal" class="mr-2">
+                Total: {{ totalSales }} transaksi
+              </v-chip>
+              <v-chip
+                color="primary"
+                variant="tonal"
+                v-if="filteredCount !== totalSales"
+              >
+                Ditampilkan: {{ filteredCount }} transaksi
+              </v-chip>
+              <v-chip
+                color="success"
+                variant="tonal"
+                class="ml-2"
+                v-if="totalPages > 1"
+              >
+                Halaman {{ currentPage }} dari {{ totalPages }}
+              </v-chip>
+            </div>
+
+            <div class="d-flex align-center">
+              <v-select
+                v-model="itemsPerPage"
+                :items="[10, 25, 50, 100]"
+                label="Per halaman"
+                density="compact"
+                variant="outlined"
+                hide-details
+                class="mr-3"
+                style="width: 140px"
+              />
+              <v-btn
+                color="primary"
+                variant="outlined"
+                prepend-icon="mdi-refresh"
+                @click="refreshData"
+                :loading="loading"
+              >
+                Refresh
+              </v-btn>
+            </div>
+          </v-col>
+        </v-row>
+
+        <!-- Clear Filters Button -->
+        <v-row v-if="hasActiveFilters" class="mt-2">
+          <v-col cols="12">
+            <v-btn
+              color="warning"
+              variant="outlined"
+              prepend-icon="mdi-filter-remove"
+              @click="clearFilters"
+              size="small"
+            >
+              Hapus Semua Filter
+            </v-btn>
+          </v-col>
+        </v-row>
+      </v-card-text>
+
+      <!-- Loading State -->
+      <div v-if="loading" class="text-center py-8">
+        <v-progress-circular indeterminate color="primary" size="64" />
+        <div class="text-h6 mt-3">Memuat data penjualan...</div>
+      </div>
+
+      <!-- Empty State -->
+      <div v-else-if="totalSales === 0" class="text-center py-12">
+        <v-icon size="120" color="grey-lighten-2">mdi-cash-register</v-icon>
+        <div class="text-h5 mt-4 mb-2">Belum Ada Penjualan</div>
+        <div class="text-body-1 text-medium-emphasis mb-4">
+          Mulai input penjualan pertama Anda
+        </div>
+        <v-btn
+          color="primary"
+          @click="$router.push('/employee/input-sales')"
+          prepend-icon="mdi-plus"
+          size="large"
+        >
+          Input Penjualan
+        </v-btn>
+      </div>
+
+      <!-- No Results State -->
+      <div v-else-if="filteredCount === 0" class="text-center py-12">
+        <v-icon size="120" color="grey-lighten-2">mdi-magnify</v-icon>
+        <div class="text-h5 mt-4 mb-2">Tidak Ada Hasil</div>
+        <div class="text-body-1 text-medium-emphasis mb-4">
+          Tidak ditemukan penjualan yang sesuai dengan filter Anda
+        </div>
+        <v-btn
+          color="warning"
+          variant="outlined"
+          prepend-icon="mdi-filter-remove"
+          @click="clearFilters"
+        >
+          Hapus Semua Filter
+        </v-btn>
+      </div>
+
+      <!-- Data Table with Pagination -->
       <v-data-table
+        v-else
         :headers="headers"
-        :items="filteredSales"
+        :items="paginatedSales"
         :loading="loading"
         item-value="id"
+        density="compact"
+        hide-default-footer
       >
         <template #item.total="{ item }">
           <span :class="{ 'text-error': hasBeenEdited(item) }">
@@ -200,6 +309,20 @@
           </div>
         </template>
       </v-data-table>
+
+      <!-- Custom Pagination -->
+      <div
+        v-if="totalPages > 1"
+        class="d-flex justify-center align-center pa-4"
+      >
+        <v-pagination
+          v-model="currentPage"
+          :length="totalPages"
+          :total-visible="7"
+          density="comfortable"
+          color="primary"
+        />
+      </div>
     </v-card>
 
     <!-- Edit Dialog -->
@@ -369,7 +492,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { useAuthStore } from "@/stores/auth";
 import { useDataStore } from "@/stores/data";
 import { updateSale, deleteSale as deleteSaleAPI } from "@/utils/supabase";
@@ -386,6 +509,12 @@ const historyDialog = ref(false);
 const saving = ref(false);
 const deleting = ref(false);
 
+// Pagination variables
+const currentPage = ref(1);
+const itemsPerPage = ref(25);
+const totalSales = ref(0);
+
+// Filter variables
 const dateFrom = ref("");
 const dateTo = ref("");
 const statusFilter = ref("");
@@ -415,9 +544,12 @@ const statusOptions = [
 ];
 
 const mySales = computed(() => {
-  return dataStore.sales.filter(
+  const allSales = dataStore.sales.filter(
     (sale) => sale.employee_id === authStore.user?.id && !sale.is_deleted
   );
+
+  totalSales.value = allSales.length;
+  return allSales;
 });
 
 const filteredSales = computed(() => {
@@ -444,6 +576,23 @@ const filteredSales = computed(() => {
   }
 
   return sales;
+});
+
+// Computed for pagination
+const filteredCount = computed(() => filteredSales.value.length);
+
+const totalPages = computed(() => {
+  return Math.ceil(filteredCount.value / itemsPerPage.value);
+});
+
+const paginatedSales = computed(() => {
+  const start = (currentPage.value - 1) * itemsPerPage.value;
+  const end = start + itemsPerPage.value;
+  return filteredSales.value.slice(start, end);
+});
+
+const hasActiveFilters = computed(() => {
+  return dateFrom.value || dateTo.value || statusFilter.value;
 });
 
 const todayTotal = computed(() => {
@@ -566,9 +715,43 @@ const showEditHistory = (sale) => {
   historyDialog.value = true;
 };
 
+// Clear all filters
+const clearFilters = () => {
+  dateFrom.value = "";
+  dateTo.value = "";
+  statusFilter.value = "";
+  currentPage.value = 1;
+};
+
+// Refresh data
+const refreshData = async () => {
+  loading.value = true;
+  try {
+    await dataStore.fetchSales({
+      employee_id: authStore.user?.id,
+      hideDeleted: true,
+    });
+  } catch (error) {
+    console.error("Error refreshing sales:", error);
+  } finally {
+    loading.value = false;
+  }
+};
+
+// Watch for filter changes and reset page
+watch([dateFrom, dateTo, statusFilter], () => {
+  currentPage.value = 1;
+});
+
+// Watch for items per page change and adjust current page
+watch(itemsPerPage, () => {
+  currentPage.value = 1;
+});
+
 onMounted(async () => {
   loading.value = true;
   try {
+    // Load user's sales data
     await dataStore.fetchSales({
       employee_id: authStore.user?.id,
       hideDeleted: true,

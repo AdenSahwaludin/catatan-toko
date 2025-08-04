@@ -4,9 +4,11 @@
     <v-navigation-drawer
       v-model="drawer"
       :rail="rail"
-      permanent
+      :permanent="!isMobile"
+      :temporary="isMobile"
       class="modern-drawer"
       elevation="0"
+      :width="isMobile ? 280 : 256"
     >
       <!-- Brand section -->
       <div class="brand-section pa-4">
@@ -115,8 +117,7 @@
         <v-btn
           icon="mdi-menu"
           variant="text"
-          @click="drawer = !drawer"
-          class="d-lg-none"
+          @click="toggleDrawer"
         />
       </template>
 
@@ -139,8 +140,8 @@
           class="mr-2"
         />
 
-        <!-- User menu -->
-        <v-menu>
+        <!-- User menu - Hidden on mobile -->
+        <v-menu v-if="!isMobile">
           <template #activator="{ props }">
             <v-btn v-bind="props" variant="text" class="user-menu-btn">
               <v-avatar size="32" color="primary">
@@ -166,25 +167,54 @@
             />
           </v-list>
         </v-menu>
+
+        <!-- Mobile user avatar -->
+        <v-avatar v-if="isMobile" size="32" color="primary" @click="handleLogout">
+          <v-icon size="16">mdi-account</v-icon>
+        </v-avatar>
       </div>
     </v-app-bar>
 
     <!-- Main Content -->
     <v-main class="modern-main">
-      <div class="content-wrapper pa-6">
+      <div class="content-wrapper pa-6" :class="{ 'pb-20': isMobile }">
         <router-view />
       </div>
     </v-main>
+
+    <!-- Bottom Navigation for Mobile -->
+    <v-bottom-navigation
+      v-if="isMobile"
+      v-model="bottomNav"
+      color="primary"
+      grow
+      class="mobile-bottom-nav"
+      height="64"
+      elevation="8"
+    >
+      <v-btn
+        v-for="item in primaryMenuItems"
+        :key="item.title"
+        :value="item.to"
+        :to="item.to"
+        stacked
+        class="bottom-nav-btn"
+      >
+        <v-icon size="20">{{ item.icon }}</v-icon>
+        <span class="text-caption mt-1">{{ item.shortTitle || item.title }}</span>
+      </v-btn>
+    </v-bottom-navigation>
   </v-app>
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, onUnmounted } from "vue";
 import { useRouter, useRoute } from "vue-router";
 import { useAuthStore } from "@/stores/auth";
 import { useThemeStore } from "@/stores/theme";
 import { useNotificationStore } from "@/stores/notifications";
 import { useDataStore } from "@/stores/data";
+import { useDisplay } from "vuetify";
 import NotificationPanel from "@/components/NotificationPanel.vue";
 
 const router = useRouter();
@@ -193,12 +223,50 @@ const authStore = useAuthStore();
 const themeStore = useThemeStore();
 const notificationStore = useNotificationStore();
 const dataStore = useDataStore();
+const { mobile } = useDisplay();
 
 const drawer = ref(true);
 const rail = ref(false);
+const bottomNav = ref(route.path);
+
+// Reactive mobile detection
+const isMobile = computed(() => mobile.value);
+
+// Watch for route changes to update bottom nav
+const unwatchRoute = router.afterEach((to) => {
+  bottomNav.value = to.path;
+  
+  // Auto-close drawer on mobile after navigation
+  if (isMobile.value) {
+    drawer.value = false;
+  }
+});
+
+// Initialize drawer state based on screen size
+const initializeDrawerState = () => {
+  if (isMobile.value) {
+    drawer.value = false;
+    rail.value = false;
+  } else {
+    drawer.value = true;
+    rail.value = false;
+  }
+};
+
+// Toggle drawer function
+const toggleDrawer = () => {
+  if (isMobile.value) {
+    drawer.value = !drawer.value;
+  } else {
+    rail.value = !rail.value;
+  }
+};
 
 // Initialize notifications when component mounts
 onMounted(async () => {
+  // Initialize drawer state
+  initializeDrawerState();
+
   // Load data first
   await Promise.all([
     dataStore.fetchItems(),
@@ -217,15 +285,22 @@ onMounted(async () => {
   }, 5 * 60 * 1000);
 });
 
+// Cleanup on unmount
+onUnmounted(() => {
+  unwatchRoute();
+});
+
 const menuItems = computed(() => [
   {
     title: "Dashboard",
+    shortTitle: "Home",
     icon: "mdi-view-dashboard-outline",
     to: "/admin",
     subtitle: "Overview & Stats",
   },
   {
     title: "Items",
+    shortTitle: "Items",
     icon: "mdi-package-variant-closed",
     to: "/admin/items",
     subtitle: "Product Management",
@@ -234,18 +309,21 @@ const menuItems = computed(() => [
   },
   {
     title: "Categories",
+    shortTitle: "Categories",
     icon: "mdi-tag-multiple-outline",
     to: "/admin/categories",
     subtitle: "Product Categories",
   },
   {
     title: "Employees",
+    shortTitle: "Staff",
     icon: "mdi-account-group-outline",
     to: "/admin/employees",
     subtitle: "Staff Management",
   },
   {
     title: "Sales",
+    shortTitle: "Sales",
     icon: "mdi-chart-line",
     to: "/admin/sales",
     subtitle: "Transaction History",
@@ -257,16 +335,27 @@ const menuItems = computed(() => [
   },
   {
     title: "Reports",
+    shortTitle: "Reports",
     icon: "mdi-chart-box-outline",
     to: "/admin/reports",
     subtitle: "Analytics & Reports",
   },
   {
     title: "Settings",
+    shortTitle: "Settings",
     icon: "mdi-cog-outline",
     to: "/admin/settings",
     subtitle: "App Configuration",
   },
+]);
+
+// Primary menu items for bottom navigation (most important 5 items)
+const primaryMenuItems = computed(() => [
+  menuItems.value[0], // Dashboard
+  menuItems.value[1], // Items
+  menuItems.value[4], // Sales
+  menuItems.value[5], // Reports
+  menuItems.value[6], // Settings
 ]);
 
 const currentPageTitle = computed(() => {
@@ -288,11 +377,19 @@ const handleLogout = async () => {
   background: rgba(255, 255, 255, 0.98);
   backdrop-filter: blur(20px);
   border-right: 1px solid rgba(0, 0, 0, 0.05);
+  z-index: 1005;
 }
 
 .v-theme--dark .modern-drawer {
   background: rgba(30, 41, 59, 0.98);
   border-right: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+/* Mobile drawer overlay */
+@media (max-width: 960px) {
+  .modern-drawer {
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  }
 }
 
 /* Brand section */
@@ -391,8 +488,65 @@ const handleLogout = async () => {
 }
 
 @media (max-width: 960px) {
-  .modern-drawer {
-    position: fixed !important;
+  .brand-section {
+    text-align: left;
+    padding: 16px !important;
+  }
+  
+  .nav-item:hover {
+    transform: none;
+  }
+  
+  .content-wrapper {
+    padding: 12px !important;
+  }
+  
+  .header-actions .v-btn:not(.user-menu-btn) {
+    min-width: auto !important;
+    width: 40px;
+    height: 40px;
+    padding: 0;
+  }
+}
+
+/* Bottom Navigation Styling */
+.mobile-bottom-nav {
+  position: fixed !important;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 1000;
+  background: rgba(255, 255, 255, 0.95) !important;
+  backdrop-filter: blur(20px);
+  border-top: 1px solid rgba(0, 0, 0, 0.1);
+}
+
+.v-theme--dark .mobile-bottom-nav {
+  background: rgba(30, 41, 59, 0.95) !important;
+  border-top: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.bottom-nav-btn {
+  min-width: auto !important;
+  border-radius: 12px !important;
+  margin: 4px 2px !important;
+  transition: all 0.3s ease !important;
+}
+
+.bottom-nav-btn.v-btn--active {
+  background: rgba(var(--v-theme-primary), 0.1) !important;
+  transform: translateY(-2px);
+}
+
+.bottom-nav-btn .v-btn__content {
+  flex-direction: column;
+  height: auto;
+}
+
+/* Hide rail toggle on mobile */
+@media (max-width: 960px) {
+  .bottom-section .v-btn[class*="chevron"] {
+    display: none !important;
   }
 }
 </style>

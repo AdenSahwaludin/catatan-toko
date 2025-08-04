@@ -279,7 +279,7 @@
         <v-list density="compact">
           <v-list-item>
             <v-list-item-title>Versi Aplikasi</v-list-item-title>
-            <v-list-item-subtitle>v1.1.3</v-list-item-subtitle>
+            <v-list-item-subtitle>v1.2.0</v-list-item-subtitle>
           </v-list-item>
 
           <v-list-item>

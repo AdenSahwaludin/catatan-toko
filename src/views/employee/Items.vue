@@ -64,7 +64,7 @@
             >
               Refresh Data
             </v-btn>
-            
+
             <v-btn
               color="warning"
               variant="outlined"
@@ -74,10 +74,10 @@
             >
               Hapus Filter
             </v-btn>
-            
+
             <v-spacer />
-            
-            <v-chip 
+
+            <v-chip
               v-if="hasActiveFilters"
               color="info"
               variant="tonal"
@@ -141,16 +141,14 @@
     <!-- Empty State -->
     <v-row v-else-if="totalItems === 0" class="justify-center">
       <v-col cols="12" md="6" class="text-center">
-        <v-icon size="120" color="grey-lighten-2">mdi-package-variant-closed</v-icon>
+        <v-icon size="120" color="grey-lighten-2"
+          >mdi-package-variant-closed</v-icon
+        >
         <div class="text-h5 mt-4 mb-2">Belum Ada Data Barang</div>
         <div class="text-body-1 text-medium-emphasis mb-4">
           Silakan tambahkan barang terlebih dahulu melalui admin panel
         </div>
-        <v-btn
-          color="primary"
-          prepend-icon="mdi-refresh"
-          @click="refreshData"
-        >
+        <v-btn color="primary" prepend-icon="mdi-refresh" @click="refreshData">
           Refresh Data
         </v-btn>
       </v-col>
@@ -498,14 +496,19 @@ const totalPages = computed(() => {
 
 const paginatedItems = computed(() => {
   if (itemsPerPage.value === -1) return filteredItems.value;
-  
+
   const start = (currentPage.value - 1) * itemsPerPage.value;
   const end = start + itemsPerPage.value;
   return filteredItems.value.slice(start, end);
 });
 
 const hasActiveFilters = computed(() => {
-  return search.value || selectedCategory.value || brandFilter.value || showLowStock.value;
+  return (
+    search.value ||
+    selectedCategory.value ||
+    brandFilter.value ||
+    showLowStock.value
+  );
 });
 
 const getStockColor = (stock) => {
@@ -550,7 +553,7 @@ watch(search, (newValue) => {
   if (searchTimeout.value) {
     clearTimeout(searchTimeout.value);
   }
-  
+
   // Set new timeout
   searchTimeout.value = setTimeout(() => {
     debouncedSearch.value = newValue;
@@ -587,7 +590,7 @@ const clearFilters = () => {
   brandFilter.value = "";
   showLowStock.value = false;
   currentPage.value = 1;
-  
+
   // Clear search timeout
   if (searchTimeout.value) {
     clearTimeout(searchTimeout.value);
@@ -597,7 +600,7 @@ const clearFilters = () => {
 
 onMounted(async () => {
   await refreshData();
-  
+
   // Load quick cart from session storage if exists
   const savedCart = sessionStorage.getItem("quickCart");
   if (savedCart) {
