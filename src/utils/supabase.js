@@ -100,6 +100,26 @@ export const createSale = async (saleData) => {
   return data[0];
 };
 
+export const createCategory = async (categoryData) => {
+  const { data, error } = await supabase
+    .from("categories")
+    .insert([categoryData])
+    .select();
+
+  if (error) throw error;
+  return data[0];
+};
+
+export const createItem = async (itemData) => {
+  const { data, error } = await supabase
+    .from("items")
+    .insert([itemData])
+    .select();
+
+  if (error) throw error;
+  return data[0];
+};
+
 export const updateSale = async (id, updates, userId, isAdmin = false) => {
   const { data: existingSale } = await supabase
     .from("sales")
