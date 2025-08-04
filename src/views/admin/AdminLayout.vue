@@ -19,7 +19,7 @@
         <v-expand-transition>
           <div v-show="!rail" class="brand-text">
             <div class="text-h6 font-weight-bold text-primary">
-              Catatan Toko
+              Mega Teknik Elektronik
             </div>
             <div class="text-caption text-medium-emphasis">Admin Panel</div>
           </div>

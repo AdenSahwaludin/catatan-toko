@@ -51,106 +51,238 @@
             />
           </v-col>
         </v-row>
+
+        <!-- Action Buttons -->
+        <v-row class="mt-2">
+          <v-col cols="12" class="d-flex gap-2">
+            <v-btn
+              color="primary"
+              variant="outlined"
+              prepend-icon="mdi-refresh"
+              @click="refreshData"
+              :loading="loading"
+            >
+              Refresh Data
+            </v-btn>
+            
+            <v-btn
+              color="warning"
+              variant="outlined"
+              prepend-icon="mdi-filter-remove"
+              @click="clearFilters"
+              v-if="hasActiveFilters"
+            >
+              Hapus Filter
+            </v-btn>
+            
+            <v-spacer />
+            
+            <v-chip 
+              v-if="hasActiveFilters"
+              color="info"
+              variant="tonal"
+              prepend-icon="mdi-filter"
+            >
+              Filter Aktif
+            </v-chip>
+          </v-col>
+        </v-row>
       </v-card-text>
     </v-card>
 
     <!-- Items Grid/List -->
     <v-row>
-      <v-col cols="12" class="d-flex justify-end mb-2">
-        <v-btn-toggle
-          v-model="viewMode"
-          mandatory
-          variant="outlined"
-          density="compact"
+      <v-col cols="12" class="d-flex justify-space-between align-center mb-2">
+        <div class="d-flex align-center">
+          <v-chip color="info" variant="tonal" class="mr-2">
+            Total: {{ totalItems }} item
+          </v-chip>
+          <v-chip
+            color="primary"
+            variant="tonal"
+            v-if="filteredCount !== totalItems"
+          >
+            Ditampilkan: {{ filteredCount }} item
+          </v-chip>
+        </div>
+
+        <div class="d-flex align-center">
+          <v-select
+            v-model="itemsPerPage"
+            :items="[12, 24, 48, 96]"
+            label="Per halaman"
+            density="compact"
+            variant="outlined"
+            hide-details
+            class="mr-3"
+            style="width: 120px"
+          />
+          <v-btn-toggle
+            v-model="viewMode"
+            mandatory
+            variant="outlined"
+            density="compact"
+          >
+            <v-btn value="grid" icon="mdi-view-grid" />
+            <v-btn value="list" icon="mdi-view-list" />
+          </v-btn-toggle>
+        </div>
+      </v-col>
+    </v-row>
+
+    <!-- Loading State -->
+    <v-row v-if="loading" class="justify-center">
+      <v-col cols="12" class="text-center">
+        <v-progress-circular indeterminate color="primary" size="64" />
+        <div class="text-h6 mt-3">Memuat data barang...</div>
+      </v-col>
+    </v-row>
+
+    <!-- Empty State -->
+    <v-row v-else-if="totalItems === 0" class="justify-center">
+      <v-col cols="12" md="6" class="text-center">
+        <v-icon size="120" color="grey-lighten-2">mdi-package-variant-closed</v-icon>
+        <div class="text-h5 mt-4 mb-2">Belum Ada Data Barang</div>
+        <div class="text-body-1 text-medium-emphasis mb-4">
+          Silakan tambahkan barang terlebih dahulu melalui admin panel
+        </div>
+        <v-btn
+          color="primary"
+          prepend-icon="mdi-refresh"
+          @click="refreshData"
         >
-          <v-btn value="grid" icon="mdi-view-grid" />
-          <v-btn value="list" icon="mdi-view-list" />
-        </v-btn-toggle>
+          Refresh Data
+        </v-btn>
       </v-col>
     </v-row>
 
-    <!-- Grid View -->
-    <v-row v-if="viewMode === 'grid'">
-      <v-col
-        v-for="item in filteredItems"
-        :key="item.id"
-        cols="12"
-        sm="6"
-        md="4"
-        lg="3"
-      >
-        <v-card class="h-100" elevation="2">
-          <v-card-text>
-            <div class="d-flex align-center mb-2">
-              <v-avatar color="primary" size="32" class="mr-2">
-                <v-icon size="16">mdi-package</v-icon>
-              </v-avatar>
-              <div class="flex-grow-1">
-                <div class="text-subtitle-2 font-weight-bold">
-                  {{ item.name }}
+    <!-- No Results State -->
+    <v-row v-else-if="filteredCount === 0" class="justify-center">
+      <v-col cols="12" md="6" class="text-center">
+        <v-icon size="120" color="grey-lighten-2">mdi-magnify</v-icon>
+        <div class="text-h5 mt-4 mb-2">Tidak Ada Hasil</div>
+        <div class="text-body-1 text-medium-emphasis mb-4">
+          Tidak ditemukan barang yang sesuai dengan filter Anda
+        </div>
+        <v-btn
+          color="warning"
+          variant="outlined"
+          prepend-icon="mdi-filter-remove"
+          @click="clearFilters"
+        >
+          Hapus Semua Filter
+        </v-btn>
+      </v-col>
+    </v-row>
+
+    <!-- Grid View with Pagination -->
+    <div v-else-if="viewMode === 'grid' && filteredCount > 0">
+      <v-row>
+        <v-col
+          v-for="item in paginatedItems"
+          :key="item.id"
+          cols="12"
+          sm="6"
+          md="4"
+          lg="3"
+        >
+          <v-card class="h-100" elevation="2" hover>
+            <v-card-text>
+              <div class="d-flex align-center mb-2">
+                <v-avatar color="primary" size="32" class="mr-2">
+                  <v-icon size="16">mdi-package</v-icon>
+                </v-avatar>
+                <div class="flex-grow-1">
+                  <div class="text-subtitle-2 font-weight-bold">
+                    {{ item.name }}
+                  </div>
+                  <div class="text-caption text-medium-emphasis">
+                    {{ item.brand }}
+                  </div>
                 </div>
-                <div class="text-caption text-medium-emphasis">
-                  {{ item.brand }}
-                </div>
+                <v-chip
+                  :color="getStockColor(item.stock)"
+                  size="small"
+                  variant="tonal"
+                >
+                  {{ item.stock }}
+                </v-chip>
               </div>
-              <v-chip
-                :color="getStockColor(item.stock)"
-                size="small"
-                variant="tonal"
+
+              <v-divider class="my-2" />
+
+              <div class="d-flex justify-space-between align-center mb-2">
+                <span class="text-caption">Kategori:</span>
+                <v-chip size="small" variant="tonal">
+                  {{ item.categories?.name }}
+                </v-chip>
+              </div>
+
+              <div
+                class="d-flex justify-space-between align-center mb-2"
+                v-if="item.model"
               >
-                {{ item.stock }}
-              </v-chip>
-            </div>
+                <span class="text-caption">Model:</span>
+                <span class="text-caption">{{ item.model }}</span>
+              </div>
 
-            <v-divider class="my-2" />
+              <div class="d-flex justify-space-between align-center">
+                <span class="text-subtitle-2 font-weight-bold">Harga:</span>
+                <span class="text-subtitle-2 font-weight-bold text-primary">
+                  {{ formatCurrency(item.price) }}
+                </span>
+              </div>
+            </v-card-text>
 
-            <div class="d-flex justify-space-between align-center mb-2">
-              <span class="text-caption">Kategori:</span>
-              <v-chip size="small" variant="tonal">
-                {{ item.categories?.name }}
-              </v-chip>
-            </div>
+            <v-card-actions>
+              <v-btn
+                color="primary"
+                variant="text"
+                size="small"
+                @click="addToQuickSale(item)"
+                :disabled="item.stock === 0"
+                prepend-icon="mdi-cart-plus"
+              >
+                Tambah ke Penjualan
+              </v-btn>
+            </v-card-actions>
+          </v-card>
+        </v-col>
+      </v-row>
 
-            <div
-              class="d-flex justify-space-between align-center mb-2"
-              v-if="item.model"
-            >
-              <span class="text-caption">Model:</span>
-              <span class="text-caption">{{ item.model }}</span>
-            </div>
+      <!-- Grid Pagination -->
+      <v-row class="mt-4" v-if="totalPages > 1">
+        <v-col cols="12" class="d-flex justify-center">
+          <v-pagination
+            v-model="currentPage"
+            :length="totalPages"
+            :total-visible="7"
+            color="primary"
+            rounded="circle"
+          />
+        </v-col>
+      </v-row>
+    </div>
 
-            <div class="d-flex justify-space-between align-center">
-              <span class="text-subtitle-2 font-weight-bold">Harga:</span>
-              <span class="text-subtitle-2 font-weight-bold text-primary">
-                {{ formatCurrency(item.price) }}
-              </span>
-            </div>
-          </v-card-text>
-
-          <v-card-actions>
-            <v-btn
-              color="primary"
-              variant="text"
-              size="small"
-              @click="addToQuickSale(item)"
-              :disabled="item.stock === 0"
-              prepend-icon="mdi-cart-plus"
-            >
-              Tambah ke Penjualan
-            </v-btn>
-          </v-card-actions>
-        </v-card>
-      </v-col>
-    </v-row>
-
-    <!-- List View -->
-    <v-card v-else>
+    <!-- List View with Built-in Pagination -->
+    <v-card v-else-if="filteredCount > 0">
       <v-data-table
         :headers="headers"
         :items="filteredItems"
         :loading="loading"
         item-value="id"
         density="compact"
+        :items-per-page="itemsPerPage"
+        :page="currentPage"
+        @update:page="currentPage = $event"
+        @update:items-per-page="itemsPerPage = $event"
+        :items-per-page-options="[
+          { value: 12, title: '12' },
+          { value: 24, title: '24' },
+          { value: 48, title: '48' },
+          { value: 96, title: '96' },
+          { value: -1, title: 'Semua' },
+        ]"
       >
         <template #item.name="{ item }">
           <div class="d-flex align-center">
@@ -276,7 +408,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { useRouter } from "vue-router";
 import { useDataStore } from "@/stores/data";
 import { formatCurrency, validateInput } from "@/utils/helpers";
@@ -291,10 +423,19 @@ const selectedCategory = ref("");
 const brandFilter = ref("");
 const showLowStock = ref(false);
 
+// Pagination variables
+const currentPage = ref(1);
+const itemsPerPage = ref(24);
+const totalItems = ref(0);
+
 const quickSaleDialog = ref(false);
 const selectedItem = ref(null);
 const quickSaleQuantity = ref(1);
 const quickCart = ref([]);
+
+// Debounce untuk search
+const searchTimeout = ref(null);
+const debouncedSearch = ref("");
 
 const headers = [
   { title: "Barang", key: "name", sortable: true },
@@ -316,9 +457,9 @@ const categoryOptions = computed(() => [
 const filteredItems = computed(() => {
   let items = [...dataStore.items];
 
-  // Search filter
-  if (search.value) {
-    const searchLower = search.value.toLowerCase();
+  // Search filter (menggunakan debounced search)
+  if (debouncedSearch.value) {
+    const searchLower = debouncedSearch.value.toLowerCase();
     items = items.filter(
       (item) =>
         item.name.toLowerCase().includes(searchLower) ||
@@ -346,6 +487,25 @@ const filteredItems = computed(() => {
   }
 
   return items;
+});
+
+const filteredCount = computed(() => filteredItems.value.length);
+
+const totalPages = computed(() => {
+  if (itemsPerPage.value === -1) return 1;
+  return Math.ceil(filteredCount.value / itemsPerPage.value);
+});
+
+const paginatedItems = computed(() => {
+  if (itemsPerPage.value === -1) return filteredItems.value;
+  
+  const start = (currentPage.value - 1) * itemsPerPage.value;
+  const end = start + itemsPerPage.value;
+  return filteredItems.value.slice(start, end);
+});
+
+const hasActiveFilters = computed(() => {
+  return search.value || selectedCategory.value || brandFilter.value || showLowStock.value;
 });
 
 const getStockColor = (stock) => {
@@ -384,14 +544,68 @@ const goToInputSales = () => {
   router.push("/employee/input-sales");
 };
 
-onMounted(async () => {
+// Watch untuk debounced search
+watch(search, (newValue) => {
+  // Clear previous timeout
+  if (searchTimeout.value) {
+    clearTimeout(searchTimeout.value);
+  }
+  
+  // Set new timeout
+  searchTimeout.value = setTimeout(() => {
+    debouncedSearch.value = newValue;
+    currentPage.value = 1; // Reset ke halaman pertama saat search
+  }, 300);
+});
+
+// Watch untuk filter changes - reset page
+watch([selectedCategory, brandFilter, showLowStock], () => {
+  currentPage.value = 1;
+});
+
+// Watch untuk items per page change
+watch(itemsPerPage, () => {
+  currentPage.value = 1;
+});
+
+const refreshData = async () => {
   loading.value = true;
   try {
     await Promise.all([dataStore.fetchItems(), dataStore.fetchCategories()]);
+    totalItems.value = dataStore.items.length;
   } catch (error) {
     console.error("Error loading data:", error);
   } finally {
     loading.value = false;
+  }
+};
+
+const clearFilters = () => {
+  search.value = "";
+  debouncedSearch.value = "";
+  selectedCategory.value = "";
+  brandFilter.value = "";
+  showLowStock.value = false;
+  currentPage.value = 1;
+  
+  // Clear search timeout
+  if (searchTimeout.value) {
+    clearTimeout(searchTimeout.value);
+    searchTimeout.value = null;
+  }
+};
+
+onMounted(async () => {
+  await refreshData();
+  
+  // Load quick cart from session storage if exists
+  const savedCart = sessionStorage.getItem("quickCart");
+  if (savedCart) {
+    try {
+      quickCart.value = JSON.parse(savedCart);
+    } catch (error) {
+      console.error("Error loading quick cart:", error);
+    }
   }
 });
 </script>
