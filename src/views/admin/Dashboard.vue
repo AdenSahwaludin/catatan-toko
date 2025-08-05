@@ -95,7 +95,7 @@
             <div>
               <h3 class="text-h5 font-weight-bold">Sales Overview</h3>
               <p class="text-subtitle-2 text-medium-emphasis mb-0">
-                Monthly sales performance
+                {{ chartPeriodLabel }} sales performance
               </p>
             </div>
             <v-btn-toggle
@@ -111,15 +111,12 @@
           </v-card-title>
 
           <v-card-text class="pa-6 pt-0">
-            <div class="chart-placeholder">
-              <v-icon size="64" color="primary" class="mb-4">
-                mdi-chart-line
-              </v-icon>
-              <p class="text-subtitle-1">
-                Sales chart will be implemented here
-              </p>
-              <p class="text-caption">Using Chart.js or similar library</p>
-            </div>
+            <SalesChart 
+              :sales-data="dataStore.sales" 
+              :period="chartPeriod" 
+              :height="300"
+              @refresh="refreshSalesData"
+            />
           </v-card-text>
         </v-card>
       </v-col>
@@ -212,6 +209,7 @@
 import { ref, computed, onMounted } from "vue";
 import { useRouter } from "vue-router";
 import { useDataStore } from "@/stores/data";
+import SalesChart from "@/components/SalesChart.vue";
 
 const router = useRouter();
 const dataStore = useDataStore();
@@ -226,6 +224,26 @@ const currentDate = computed(() => {
     day: "numeric",
   });
 });
+
+// Chart period label for display
+const chartPeriodLabel = computed(() => {
+  const labels = {
+    week: "Weekly",
+    month: "Monthly", 
+    year: "Yearly"
+  };
+  return labels[chartPeriod.value] || "Monthly";
+});
+
+// Refresh sales data function
+const refreshSalesData = async () => {
+  try {
+    await dataStore.fetchSales();
+    console.log('Sales data refreshed');
+  } catch (error) {
+    console.error('Failed to refresh sales data:', error);
+  }
+};
 
 // Calculate real-time stats from data store
 const statsCards = computed(() => {
@@ -472,25 +490,8 @@ onMounted(async () => {
   box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
 }
 
-.v-theme--dark .chart-placeholder {
-  background: rgba(102, 126, 234, 0.1);
-  border-color: rgba(102, 126, 234, 0.3);
-  color: rgba(255, 255, 255, 0.8);
-}
-
 .v-theme--dark .activity-item:hover {
   background: rgba(102, 126, 234, 0.1);
-}
-
-.chart-placeholder {
-  height: 300px;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  background: rgba(102, 126, 234, 0.05);
-  border-radius: 12px;
-  border: 2px dashed rgba(102, 126, 234, 0.2);
 }
 
 .activity-item {
