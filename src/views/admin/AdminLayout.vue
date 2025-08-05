@@ -114,11 +114,7 @@
     <!-- App Bar -->
     <v-app-bar elevation="0" class="modern-appbar" density="comfortable">
       <template #prepend>
-        <v-btn
-          icon="mdi-menu"
-          variant="text"
-          @click="toggleDrawer"
-        />
+        <v-btn icon="mdi-menu" variant="text" @click="toggleDrawer" />
       </template>
 
       <v-app-bar-title class="text-h6 font-weight-medium">
@@ -168,10 +164,35 @@
           </v-list>
         </v-menu>
 
-        <!-- Mobile user avatar -->
-        <v-avatar v-if="isMobile" size="32" color="primary" @click="handleLogout">
-          <v-icon size="16">mdi-account</v-icon>
-        </v-avatar>
+        <!-- User menu for mobile -->
+        <v-menu v-if="isMobile">
+          <template #activator="{ props }">
+            <v-avatar
+              v-bind="props"
+              size="32"
+              color="primary"
+              class="cursor-pointer"
+            >
+              <v-icon size="16">mdi-account</v-icon>
+            </v-avatar>
+          </template>
+
+          <v-list min-width="200">
+            <v-list-item
+              prepend-icon="mdi-cog-outline"
+              title="Settings"
+              subtitle="App preferences"
+              @click="router.push('/admin/settings')"
+            />
+
+            <v-divider />
+            <v-list-item
+              prepend-icon="mdi-logout"
+              title="Logout"
+              @click="handleLogout"
+            />
+          </v-list>
+        </v-menu>
       </div>
     </v-app-bar>
 
@@ -201,7 +222,9 @@
         class="bottom-nav-btn"
       >
         <v-icon size="20">{{ item.icon }}</v-icon>
-        <span class="text-caption mt-1">{{ item.shortTitle || item.title }}</span>
+        <span class="text-caption mt-1">{{
+          item.shortTitle || item.title
+        }}</span>
       </v-btn>
     </v-bottom-navigation>
   </v-app>
@@ -235,7 +258,7 @@ const isMobile = computed(() => mobile.value);
 // Watch for route changes to update bottom nav
 const unwatchRoute = router.afterEach((to) => {
   bottomNav.value = to.path;
-  
+
   // Auto-close drawer on mobile after navigation
   if (isMobile.value) {
     drawer.value = false;
@@ -492,15 +515,15 @@ const handleLogout = async () => {
     text-align: left;
     padding: 16px !important;
   }
-  
+
   .nav-item:hover {
     transform: none;
   }
-  
+
   .content-wrapper {
     padding: 12px !important;
   }
-  
+
   .header-actions .v-btn:not(.user-menu-btn) {
     min-width: auto !important;
     width: 40px;
@@ -548,5 +571,10 @@ const handleLogout = async () => {
   .bottom-section .v-btn[class*="chevron"] {
     display: none !important;
   }
+}
+
+/* Cursor pointer for clickable elements */
+.cursor-pointer {
+  cursor: pointer;
 }
 </style>

@@ -95,7 +95,10 @@
               <v-text-field
                 v-model="itemSearch"
                 label="Cari barang..."
+                placeholder="Contoh: philips 5 watt atau lampu 5"
                 prepend-inner-icon="mdi-magnify"
+                hint="Ketik beberapa kata kunci untuk pencarian yang lebih akurat"
+                persistent-hint
                 variant="outlined"
                 density="compact"
                 clearable
@@ -765,14 +768,36 @@ const filteredItems = computed(() => {
 
   totalItems.value = items.length;
 
-  // Search filter
+  // Enhanced search filter - dynamic keyword matching
   if (itemSearch.value) {
-    const searchLower = itemSearch.value.toLowerCase();
-    items = items.filter(
-      (item) =>
-        item.name.toLowerCase().includes(searchLower) ||
-        item.brand.toLowerCase().includes(searchLower)
-    );
+    const searchKeywords = itemSearch.value
+      .toLowerCase()
+      .split(" ")
+      .filter((keyword) => keyword.length > 0);
+
+    items = items.filter((item) => {
+      // Create searchable text from all relevant fields
+      const searchableText = [
+        item.name,
+        item.brand,
+        item.model || "",
+        getCategoryName(item.category_id),
+      ]
+        .join(" ")
+        .toLowerCase();
+
+      // Check if ALL keywords are found in the searchable text
+      // Also check for partial matches (minimum 3 characters)
+      return searchKeywords.every((keyword) => {
+        if (keyword.length >= 3) {
+          return searchableText.includes(keyword);
+        } else {
+          // For short keywords, require exact word match
+          const words = searchableText.split(" ");
+          return words.some((word) => word.includes(keyword));
+        }
+      });
+    });
   }
 
   // Category filter

@@ -455,15 +455,36 @@ const categoryOptions = computed(() => [
 const filteredItems = computed(() => {
   let items = [...dataStore.items];
 
-  // Search filter (menggunakan debounced search)
+  // Enhanced search filter (menggunakan debounced search) - dynamic keyword matching
   if (debouncedSearch.value) {
-    const searchLower = debouncedSearch.value.toLowerCase();
-    items = items.filter(
-      (item) =>
-        item.name.toLowerCase().includes(searchLower) ||
-        item.brand.toLowerCase().includes(searchLower) ||
-        item.model?.toLowerCase().includes(searchLower)
-    );
+    const searchKeywords = debouncedSearch.value
+      .toLowerCase()
+      .split(" ")
+      .filter((keyword) => keyword.length > 0);
+
+    items = items.filter((item) => {
+      // Create searchable text from all relevant fields
+      const searchableText = [
+        item.name,
+        item.brand,
+        item.model || "",
+        item.categories?.name || "",
+      ]
+        .join(" ")
+        .toLowerCase();
+
+      // Check if ALL keywords are found in the searchable text
+      // Also check for partial matches (minimum 3 characters)
+      return searchKeywords.every((keyword) => {
+        if (keyword.length >= 3) {
+          return searchableText.includes(keyword);
+        } else {
+          // For short keywords, require exact word match
+          const words = searchableText.split(" ");
+          return words.some((word) => word.includes(keyword));
+        }
+      });
+    });
   }
 
   // Category filter
