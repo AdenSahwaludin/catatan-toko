@@ -33,10 +33,10 @@
                   </v-avatar>
                 </div>
                 <div class="text-h4 font-weight-bold text-primary mb-2">
-                  Catatan Toko
+                  Mega Teknik Elektronik
                 </div>
                 <div class="text-subtitle-1 text-medium-emphasis">
-                  Sistem Pencatatan Penjualan Modern
+                  Daftar Harga dan Pencatatan Penjualan
                 </div>
               </v-card-title>
 
@@ -83,7 +83,7 @@
                   <div class="input-group mb-4">
                     <v-checkbox
                       v-model="rememberMe"
-                      label="Remember me for 1 week"
+                      label="Tetap login selama 1 minggu"
                       color="primary"
                       hide-details
                       :disabled="loading || registering"

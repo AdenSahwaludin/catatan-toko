@@ -111,9 +111,9 @@
           </v-card-title>
 
           <v-card-text class="pa-6 pt-0">
-            <SalesChart 
-              :sales-data="dataStore.sales" 
-              :period="chartPeriod" 
+            <SalesChart
+              :sales-data="dataStore.sales"
+              :period="chartPeriod"
               :height="300"
               @refresh="refreshSalesData"
             />
@@ -229,8 +229,8 @@ const currentDate = computed(() => {
 const chartPeriodLabel = computed(() => {
   const labels = {
     week: "Weekly",
-    month: "Monthly", 
-    year: "Yearly"
+    month: "Monthly",
+    year: "Yearly",
   };
   return labels[chartPeriod.value] || "Monthly";
 });
@@ -239,9 +239,9 @@ const chartPeriodLabel = computed(() => {
 const refreshSalesData = async () => {
   try {
     await dataStore.fetchSales();
-    console.log('Sales data refreshed');
+    console.log("Sales data refreshed");
   } catch (error) {
-    console.error('Failed to refresh sales data:', error);
+    console.error("Failed to refresh sales data:", error);
   }
 };
 
