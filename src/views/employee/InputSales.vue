@@ -464,6 +464,24 @@
               {{ cart.length }} item
             </v-chip>
             <v-btn
+              color="info"
+              size="small"
+              variant="outlined"
+              @click="customItemDialog = true"
+              prepend-icon="mdi-plus-circle"
+              class="d-none d-md-flex"
+            >
+              Tambah Custom
+            </v-btn>
+            <v-btn
+              color="info"
+              size="small"
+              variant="text"
+              icon="mdi-plus-circle"
+              @click="customItemDialog = true"
+              class="d-flex d-md-none"
+            />
+            <v-btn
               v-if="cart.length > 0"
               color="warning"
               size="small"
@@ -519,7 +537,18 @@
                             {{ cartItem.name }}
                           </div>
                           <div class="text-caption text-medium-emphasis">
-                            {{ cartItem.brand }}
+                            <template v-if="cartItem.isCustom">
+                              <v-chip
+                                size="x-small"
+                                color="info"
+                                variant="tonal"
+                              >
+                                {{ cartItem.type }}
+                              </v-chip>
+                            </template>
+                            <template v-else>
+                              {{ cartItem.brand }}
+                            </template>
                           </div>
                           <div
                             class="text-body-2 font-weight-bold text-primary"
@@ -555,7 +584,10 @@
                               @click="
                                 updateCartQuantity(index, cartItem.quantity + 1)
                               "
-                              :disabled="cartItem.quantity >= cartItem.stock"
+                              :disabled="
+                                !cartItem.isCustom &&
+                                cartItem.quantity >= cartItem.stock
+                              "
                               density="compact"
                             />
                           </div>
@@ -585,13 +617,34 @@
                   class="px-0"
                 >
                   <template #prepend>
-                    <v-avatar color="primary" size="32">
-                      <v-icon size="16">mdi-package</v-icon>
+                    <v-avatar
+                      :color="cartItem.isCustom ? 'info' : 'primary'"
+                      size="32"
+                    >
+                      <v-icon size="16">
+                        {{
+                          cartItem.isCustom ? "mdi-plus-circle" : "mdi-package"
+                        }}
+                      </v-icon>
                     </v-avatar>
                   </template>
 
-                  <v-list-item-title>{{ cartItem.name }}</v-list-item-title>
+                  <v-list-item-title>
+                    {{ cartItem.name }}
+                    <v-chip
+                      v-if="cartItem.isCustom"
+                      size="x-small"
+                      color="info"
+                      variant="tonal"
+                      class="ml-2"
+                    >
+                      Custom
+                    </v-chip>
+                  </v-list-item-title>
                   <v-list-item-subtitle>
+                    <template v-if="cartItem.isCustom">
+                      {{ cartItem.type }} •
+                    </template>
                     {{
                       cartItem.price ? formatCurrency(cartItem.price) : "Rp 0"
                     }}
@@ -618,7 +671,10 @@
                         @click="
                           updateCartQuantity(index, cartItem.quantity + 1)
                         "
-                        :disabled="cartItem.quantity >= cartItem.stock"
+                        :disabled="
+                          !cartItem.isCustom &&
+                          cartItem.quantity >= cartItem.stock
+                        "
                       />
                       <v-btn
                         icon="mdi-delete"
@@ -672,9 +728,291 @@
             Total: {{ formatCurrency(lastSaleAmount) }}
           </div>
         </v-card-text>
-        <v-card-actions>
-          <v-spacer />
-          <v-btn color="primary" @click="successDialog = false">OK</v-btn>
+        <v-card-actions class="px-6 pb-6">
+          <v-btn
+            color="secondary"
+            variant="outlined"
+            @click="successDialog = false"
+            class="flex-1"
+          >
+            Tutup
+          </v-btn>
+          <v-btn color="primary" @click="printReceipt" class="flex-1 ml-3">
+            <v-icon class="mr-2">mdi-printer</v-icon>
+            Cetak Struk
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- Receipt Modal -->
+    <v-dialog v-model="receiptDialog" max-width="400px">
+      <v-card>
+        <v-card-title class="text-center py-3">
+          <v-icon class="mr-2">mdi-receipt</v-icon>
+          Struk Penjualan
+        </v-card-title>
+        <v-divider />
+
+        <!-- Receipt Content -->
+        <div
+          id="receipt-content"
+          class="pa-4"
+          style="
+            background: white;
+            color: black;
+            font-family: 'Courier New', monospace;
+          "
+        >
+          <!-- Header -->
+          <div class="text-center mb-3">
+            <!-- Logo -->
+            <div style="margin-bottom: 10px">
+              <img
+                src="/logo.jpg"
+                alt="Mega Teknik Logo"
+                style="max-width: 80px; max-height: 80px; object-fit: contain"
+                onerror="this.style.display='none'"
+              />
+            </div>
+            <div style="font-weight: bold; font-size: 18px; margin-bottom: 5px">
+              MEGA TEKNIK
+            </div>
+            <div style="font-size: 12px; line-height: 1.3">
+              Peralatan Teknik & Elektronik<br />
+              Jl. Contoh No. 123, Kota<br />
+              Telp: (021) 12345678
+            </div>
+            <div style="border-top: 1px dashed black; margin: 10px 0"></div>
+          </div>
+
+          <!-- Sale Info -->
+          <div style="font-size: 12px; margin-bottom: 15px">
+            <div style="display: flex; justify-content: space-between">
+              <span>Tanggal:</span>
+              <span>{{ formatDate(new Date()) }}</span>
+            </div>
+            <div style="display: flex; justify-content: space-between">
+              <span>Kasir:</span>
+              <span>{{ authStore.user?.email?.split("@")[0] || "Admin" }}</span>
+            </div>
+            <div style="border-top: 1px dashed black; margin: 10px 0"></div>
+          </div>
+
+          <!-- Items -->
+          <div style="font-size: 12px; margin-bottom: 15px">
+            <template v-if="inputMode === 'manual'">
+              <div
+                v-for="(item, index) in manualItems"
+                :key="index"
+                style="margin-bottom: 8px"
+              >
+                <div style="display: flex; justify-content: space-between">
+                  <span style="font-weight: bold">{{ item.name }}</span>
+                </div>
+                <div style="display: flex; justify-content: space-between">
+                  <span>{{ item.qty }} x {{ formatCurrency(item.price) }}</span>
+                  <span>{{ formatCurrency(item.qty * item.price) }}</span>
+                </div>
+              </div>
+            </template>
+
+            <template v-else>
+              <!-- Items Count Summary -->
+              <div
+                style="
+                  font-size: 11px;
+                  color: #666;
+                  margin-bottom: 8px;
+                  text-align: center;
+                "
+              >
+                {{ lastSaleCart.length }} item{{ lastSaleCart.length > 1 ? "s" : "" }} dibeli
+              </div>
+
+              <div
+                v-for="(item, index) in lastSaleCart"
+                :key="index"
+                style="
+                  margin-bottom: 12px;
+                  padding-bottom: 8px;
+                  border-bottom: 1px dotted #ccc;
+                "
+              >
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    margin-bottom: 2px;
+                  "
+                >
+                  <span style="font-weight: bold; font-size: 13px">{{
+                    item.name
+                  }}</span>
+                </div>
+                <div style="font-size: 10px; color: #666; margin-bottom: 3px">
+                  <template v-if="item.isCustom">
+                    <span>{{ item.type || "Custom Item" }}</span>
+                  </template>
+                  <template v-else>
+                    <div>ID: {{ item.id }}</div>
+                    <div>
+                      {{ item.brand || "No Brand"
+                      }}<span v-if="item.model"> - {{ item.model }}</span>
+                    </div>
+                    <!-- Category info -->
+                    <template v-if="item.category_id">
+                      <div>
+                        Kategori:
+                        {{
+                          dataStore.categories.find(
+                            (cat) => cat.id === item.category_id
+                          )?.name || "Uncategorized"
+                        }}
+                      </div>
+                    </template>
+                  </template>
+                </div>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    font-size: 12px;
+                  "
+                >
+                  <span
+                    >{{ item.quantity }} x
+                    {{ formatCurrency(item.price) }}</span
+                  >
+                  <span style="font-weight: bold">{{
+                    formatCurrency(item.quantity * item.price)
+                  }}</span>
+                </div>
+              </div>
+            </template>
+
+            <div style="border-top: 1px dashed black; margin: 10px 0"></div>
+          </div>
+
+          <!-- Total -->
+          <div style="font-size: 14px; font-weight: bold; margin-bottom: 15px">
+            <div style="display: flex; justify-content: space-between">
+              <span>TOTAL:</span>
+              <span>{{ formatCurrency(lastSaleAmount) }}</span>
+            </div>
+          </div>
+
+          <!-- Footer -->
+          <div style="font-size: 11px; text-align: center; margin-top: 20px">
+            <div
+              style="border-top: 1px dashed black; margin-bottom: 10px"
+            ></div>
+            <div>Terima kasih atas kunjungan Anda!</div>
+            <div>Barang yang sudah dibeli tidak dapat ditukar</div>
+          </div>
+        </div>
+
+        <v-card-actions class="px-6 pb-6">
+          <v-btn
+            color="secondary"
+            variant="outlined"
+            @click="receiptDialog = false"
+            class="flex-1"
+          >
+            Batal
+          </v-btn>
+          <v-btn color="primary" @click="downloadReceipt" class="flex-1 ml-3">
+            <v-icon class="mr-2">mdi-download</v-icon>
+            Unduh Struk
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
+
+    <!-- Custom Item Dialog -->
+    <v-dialog v-model="customItemDialog" max-width="500px">
+      <v-card>
+        <v-card-title class="d-flex align-center">
+          <v-icon class="mr-2">mdi-plus-circle</v-icon>
+          Tambah Barang Custom
+        </v-card-title>
+        <v-divider />
+
+        <v-card-text class="pt-4">
+          <v-form ref="customItemForm" @submit.prevent="addCustomItem">
+            <v-text-field
+              v-model="customItem.name"
+              label="Nama Barang *"
+              variant="outlined"
+              :rules="[(v) => !!v || 'Nama barang wajib diisi']"
+              class="mb-3"
+            />
+
+            <v-text-field
+              v-model="customItem.price"
+              label="Harga Satuan *"
+              variant="outlined"
+              type="number"
+              prefix="Rp"
+              :rules="[
+                (v) => !!v || 'Harga wajib diisi',
+                (v) => v > 0 || 'Harga harus lebih dari 0',
+              ]"
+              class="mb-3"
+            />
+
+            <v-text-field
+              v-model="customItem.quantity"
+              label="Jumlah *"
+              variant="outlined"
+              type="number"
+              :rules="[
+                (v) => !!v || 'Jumlah wajib diisi',
+                (v) => v > 0 || 'Jumlah harus lebih dari 0',
+              ]"
+              class="mb-3"
+            />
+
+            <v-text-field
+              v-model="customItem.type"
+              label="Keterangan (opsional)"
+              variant="outlined"
+              placeholder="Misal: Barang khusus, Jasa, dll"
+              class="mb-3"
+            />
+
+            <!-- Total Preview -->
+            <v-card
+              color="info"
+              variant="tonal"
+              class="mb-3"
+              v-if="customItem.price && customItem.quantity"
+            >
+              <v-card-text class="py-2">
+                <div class="d-flex justify-space-between align-center">
+                  <span class="text-body-2">Total Harga:</span>
+                  <span class="text-h6 font-weight-bold">
+                    {{ formatCurrency(customItem.price * customItem.quantity) }}
+                  </span>
+                </div>
+              </v-card-text>
+            </v-card>
+          </v-form>
+        </v-card-text>
+
+        <v-card-actions class="px-6 pb-6">
+          <v-btn
+            color="secondary"
+            variant="outlined"
+            @click="closeCustomItemDialog"
+            class="flex-1"
+          >
+            Batal
+          </v-btn>
+          <v-btn color="primary" @click="addCustomItem" class="flex-1 ml-3">
+            <v-icon class="mr-2">mdi-cart-plus</v-icon>
+            Tambah ke Keranjang
+          </v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
@@ -682,7 +1020,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from "vue";
+import { ref, computed, onMounted, watch, nextTick } from "vue";
 import { useAuthStore } from "@/stores/auth";
 import { useDataStore } from "@/stores/data";
 import { useNotificationStore } from "@/stores/notifications";
@@ -697,6 +1035,8 @@ const inputMode = ref("manual");
 const saving = ref(false);
 const loadingItems = ref(false);
 const successDialog = ref(false);
+const receiptDialog = ref(false);
+const customItemDialog = ref(false);
 
 // Pagination variables
 const currentPage = ref(1);
@@ -708,6 +1048,7 @@ const itemSearch = ref("");
 const selectedCategory = ref("");
 const showAvailableOnly = ref(true);
 const lastSaleAmount = ref(0);
+const lastSaleCart = ref([]);
 
 // Manual input
 const manualAmount = ref("");
@@ -716,6 +1057,15 @@ const manualForm = ref();
 
 // Items input - cart
 const cart = ref([]);
+
+// Custom item
+const customItem = ref({
+  name: "",
+  price: "",
+  quantity: 1,
+  type: "",
+});
+const customItemForm = ref();
 
 const itemHeaders = [
   { title: "Nama", key: "name", sortable: true },
@@ -953,7 +1303,13 @@ const updateCartQuantity = (index, newQuantity) => {
 
   const cartItem = cart.value[index];
 
-  // Validate against available stock
+  // For custom items, no stock limitation
+  if (cartItem.isCustom) {
+    cartItem.quantity = newQuantity;
+    return;
+  }
+
+  // Validate against available stock for regular items
   if (newQuantity > cartItem.stock) {
     notificationStore.addNotification({
       type: "error",
@@ -1020,6 +1376,12 @@ const submitItemsSale = async () => {
     const stockErrors = [];
 
     for (const cartItem of cart.value) {
+      // Skip stock validation for custom items
+      if (cartItem.isCustom) {
+        console.log(`Skipping stock check for custom item: ${cartItem.name}`);
+        continue;
+      }
+
       // Find current item data to check stock
       const currentItem = dataStore.items.find(
         (item) => item.id === cartItem.id
@@ -1074,8 +1436,14 @@ const submitItemsSale = async () => {
     await createSale(saleData);
 
     console.log("Updating stock for items...");
-    // Update stock for each item
+    // Update stock for each item (skip custom items)
     for (const cartItem of cart.value) {
+      // Skip stock update for custom items
+      if (cartItem.isCustom) {
+        console.log(`Skipping stock update for custom item: ${cartItem.name}`);
+        continue;
+      }
+
       console.log(
         `Updating stock for ${cartItem.name} (${cartItem.id}), quantity: ${cartItem.quantity}`
       );
@@ -1083,6 +1451,7 @@ const submitItemsSale = async () => {
     }
 
     lastSaleAmount.value = cartTotal.value;
+    lastSaleCart.value = [...cart.value]; // Save cart data before clearing
     successDialog.value = true;
 
     // Reset cart
@@ -1148,6 +1517,137 @@ watch([itemSearch, selectedCategory, showAvailableOnly], () => {
 watch(itemsPerPage, () => {
   currentPage.value = 1;
 });
+
+// Reset custom item form when dialog opens
+watch(customItemDialog, (newVal) => {
+  if (newVal) {
+    // Reset form when dialog opens
+    customItem.value = {
+      name: "",
+      price: "",
+      quantity: 1,
+      type: "",
+    };
+    // Reset validation in next tick after dialog is fully rendered
+    nextTick(() => {
+      if (customItemForm.value) {
+        customItemForm.value.resetValidation();
+      }
+    });
+  }
+});
+
+// Receipt functions
+const printReceipt = () => {
+  successDialog.value = false;
+  receiptDialog.value = true;
+};
+
+const formatDate = (date) => {
+  return new Intl.DateTimeFormat("id-ID", {
+    day: "2-digit",
+    month: "2-digit",
+    year: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(date);
+};
+
+const downloadReceipt = () => {
+  const receiptContent = document.getElementById("receipt-content");
+
+  // Create a new window for printing
+  const printWindow = window.open("", "_blank", "width=400,height=600");
+
+  printWindow.document.write(`
+    <!DOCTYPE html>
+    <html>
+    <head>
+      <title>Struk Penjualan</title>
+      <style>
+        body {
+          margin: 0;
+          padding: 20px;
+          font-family: 'Courier New', monospace;
+          background: white;
+          color: black;
+        }
+        @media print {
+          body { margin: 0; padding: 10px; }
+        }
+        .logo {
+          max-width: 80px;
+          max-height: 80px;
+          object-fit: contain;
+        }
+      </style>
+    </head>
+    <body>
+      ${receiptContent.innerHTML}
+    </body>
+    </html>
+  `);
+
+  printWindow.document.close();
+  printWindow.focus();
+
+  // Auto print after a short delay
+  setTimeout(() => {
+    printWindow.print();
+    printWindow.close();
+  }, 500);
+
+  receiptDialog.value = false;
+};
+
+// Custom item functions
+const closeCustomItemDialog = () => {
+  customItemDialog.value = false;
+  // Reset form first before clearing values
+  if (customItemForm.value) {
+    customItemForm.value.reset();
+    customItemForm.value.resetValidation();
+  }
+  // Then clear the values
+  customItem.value = {
+    name: "",
+    price: "",
+    quantity: 1,
+    type: "",
+  };
+};
+
+const addCustomItem = async () => {
+  if (!customItemForm.value) return;
+
+  const { valid } = await customItemForm.value.validate();
+  if (!valid) return;
+
+  // Create custom item object
+  const newCustomItem = {
+    id: "custom_" + Date.now(), // Generate unique ID for custom items
+    name: customItem.value.name.trim(),
+    price: Number(customItem.value.price),
+    quantity: Number(customItem.value.quantity),
+    type: customItem.value.type.trim() || "Custom Item",
+    brand: "Custom",
+    model: "",
+    stock: 999, // Set high stock for custom items
+    isCustom: true, // Flag to identify custom items
+  };
+
+  // Add to cart
+  cart.value.push(newCustomItem);
+
+  // Show success notification
+  notificationStore.addNotification({
+    type: "success",
+    message: `Barang custom "${newCustomItem.name}" ditambahkan ke keranjang`,
+  });
+
+  // Close dialog and reset form properly
+  closeCustomItemDialog();
+};
 
 onMounted(async () => {
   // Load cart from session storage if available

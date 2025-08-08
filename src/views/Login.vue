@@ -33,7 +33,9 @@
                   </v-avatar>
                 </div>
                 <div class="text-h4 font-weight-bold text-primary mb-2">
-                  Mega Teknik Elektronik
+                  Mega Teknik
+                  <br />
+                  Elektronik
                 </div>
                 <div class="text-subtitle-1 text-medium-emphasis">
                   Daftar Harga dan Pencatatan Penjualan
