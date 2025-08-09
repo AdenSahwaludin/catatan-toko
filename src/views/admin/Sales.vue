@@ -329,11 +329,11 @@
           <!-- Header -->
           <div class="text-center mb-3">
             <!-- Logo -->
-            <div style="margin-bottom: 10px;">
-              <img 
-                src="/logo.jpg" 
-                alt="Mega Teknik Logo" 
-                style="max-width: 80px; max-height: 80px; object-fit: contain;"
+            <div style="margin-bottom: 10px">
+              <img
+                src="/logo.jpg"
+                alt="Mega Teknik Logo"
+                style="max-width: 80px; max-height: 80px; object-fit: contain"
                 onerror="this.style.display='none'"
               />
             </div>
@@ -352,11 +352,17 @@
           <div style="font-size: 12px; margin-bottom: 15px">
             <div style="display: flex; justify-content: space-between">
               <span>Tanggal:</span>
-              <span>{{ selectedSale ? formatDate(new Date(selectedSale.created_at)) : '' }}</span>
+              <span>{{
+                selectedSale
+                  ? formatDate(new Date(selectedSale.created_at))
+                  : ""
+              }}</span>
             </div>
             <div style="display: flex; justify-content: space-between">
               <span>Kasir:</span>
-              <span>{{ selectedSale?.users?.email?.split("@")[0] || "Admin" }}</span>
+              <span>{{
+                selectedSale?.users?.email?.split("@")[0] || "Admin"
+              }}</span>
             </div>
             <div style="border-top: 1px dashed black; margin: 10px 0"></div>
           </div>
@@ -368,7 +374,10 @@
                 <div style="display: flex; justify-content: space-between">
                   <span style="font-weight: bold">Penjualan Manual</span>
                 </div>
-                <div v-if="selectedSale.details?.notes" style="font-size: 10px; color: #666; margin: 5px 0;">
+                <div
+                  v-if="selectedSale.details?.notes"
+                  style="font-size: 10px; color: #666; margin: 5px 0"
+                >
                   Catatan: {{ selectedSale.details.notes }}
                 </div>
                 <div style="display: flex; justify-content: space-between">
@@ -380,25 +389,62 @@
 
             <template v-else-if="selectedSale.details?.items">
               <!-- Items Count Summary -->
-              <div style="font-size: 11px; color: #666; margin-bottom: 8px; text-align: center;">
-                {{ selectedSale.details.items.length }} item{{ selectedSale.details.items.length > 1 ? 's' : '' }} dibeli
+              <div
+                style="
+                  font-size: 11px;
+                  color: #666;
+                  margin-bottom: 8px;
+                  text-align: center;
+                "
+              >
+                {{ selectedSale.details.items.length }} item{{
+                  selectedSale.details.items.length > 1 ? "s" : ""
+                }}
+                dibeli
               </div>
-              
+
               <div
                 v-for="(item, index) in selectedSale.details.items"
                 :key="index"
-                style="margin-bottom: 12px; padding-bottom: 8px; border-bottom: 1px dotted #ccc;"
+                style="
+                  margin-bottom: 12px;
+                  padding-bottom: 8px;
+                  border-bottom: 1px dotted #ccc;
+                "
               >
-                <div style="display: flex; justify-content: space-between; margin-bottom: 2px;">
-                  <span style="font-weight: bold; font-size: 13px;">{{ item.name }}</span>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    margin-bottom: 2px;
+                  "
+                >
+                  <span style="font-weight: bold; font-size: 13px">{{
+                    item.name
+                  }}</span>
                 </div>
-                <div style="font-size: 10px; color: #666; margin-bottom: 3px;">
-                  <div v-if="item.id && item.id.toString().startsWith('custom_')">Custom Item</div>
-                  <div v-else>ID: {{ item.id || 'N/A' }}</div>
+                <div style="font-size: 10px; color: #666; margin-bottom: 3px">
+                  <div
+                    v-if="item.id && item.id.toString().startsWith('custom_')"
+                  >
+                    Custom Item
+                  </div>
+                  <div v-else>ID: {{ item.id || "N/A" }}</div>
                 </div>
-                <div style="display: flex; justify-content: space-between; font-size: 12px;">
-                  <span>{{ item.quantity }} x {{ formatCurrency(item.price) }}</span>
-                  <span style="font-weight: bold;">{{ formatCurrency(item.quantity * item.price) }}</span>
+                <div
+                  style="
+                    display: flex;
+                    justify-content: space-between;
+                    font-size: 12px;
+                  "
+                >
+                  <span
+                    >{{ item.quantity }} x
+                    {{ formatCurrency(item.price) }}</span
+                  >
+                  <span style="font-weight: bold">{{
+                    formatCurrency(item.quantity * item.price)
+                  }}</span>
                 </div>
               </div>
             </template>
@@ -410,7 +456,9 @@
           <div style="font-size: 14px; font-weight: bold; margin-bottom: 15px">
             <div style="display: flex; justify-content: space-between">
               <span>TOTAL:</span>
-              <span>{{ selectedSale ? formatCurrency(selectedSale.total) : 'Rp 0' }}</span>
+              <span>{{
+                selectedSale ? formatCurrency(selectedSale.total) : "Rp 0"
+              }}</span>
             </div>
           </div>
 

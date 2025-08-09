@@ -827,7 +827,10 @@
                   text-align: center;
                 "
               >
-                {{ lastSaleCart.length }} item{{ lastSaleCart.length > 1 ? "s" : "" }} dibeli
+                {{ lastSaleCart.length }} item{{
+                  lastSaleCart.length > 1 ? "s" : ""
+                }}
+                dibeli
               </div>
 
               <div
