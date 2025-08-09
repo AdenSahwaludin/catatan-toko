@@ -130,14 +130,57 @@
               </v-col>
 
               <v-col cols="12" sm="6">
+                <div class="d-flex align-center justify-space-between mb-1">
+                  <span class="text-subtitle-2">Kategori</span>
+                  <v-btn
+                    size="x-small"
+                    variant="text"
+                    prepend-icon="mdi-plus"
+                    @click="showNewCategory = !showNewCategory"
+                  >
+                    Buat kategori
+                  </v-btn>
+                </div>
+
+                <!-- Select kategori yang sudah ada -->
                 <v-select
                   v-model="formData.category_id"
-                  :items="categoryOptions"
+                  :items="categoryOptionsForForm"
                   label="Kategori"
                   variant="outlined"
                   :rules="[validateInput.required]"
                   required
                 />
+
+                <!-- Input kategori baru -->
+                <v-expand-transition>
+                  <div v-if="showNewCategory" class="mt-2">
+                    <v-text-field
+                      v-model="newCategoryName"
+                      label="Nama kategori baru"
+                      variant="outlined"
+                      density="compact"
+                      :rules="[validateInput.required]"
+                    />
+                    <div class="d-flex ga-2">
+                      <v-btn
+                        size="small"
+                        color="primary"
+                        :loading="creatingCategory"
+                        @click="createCategory"
+                      >
+                        Simpan kategori
+                      </v-btn>
+                      <v-btn
+                        size="small"
+                        variant="text"
+                        @click="cancelCreateCategory"
+                      >
+                        Batal
+                      </v-btn>
+                    </div>
+                  </div>
+                </v-expand-transition>
               </v-col>
 
               <v-col cols="12" sm="6">
@@ -413,6 +456,63 @@ const deleteItem = async () => {
   }
 };
 
+const showNewCategory = ref(false);
+const newCategoryName = ref("");
+const creatingCategory = ref(false);
+
+const categoryOptionsForForm = computed(() =>
+  dataStore.categories.map((cat) => ({ title: cat.name, value: cat.id }))
+);
+
+const existingCategoryNamesLower = computed(() =>
+  dataStore.categories.map((c) => c.name.trim().toLowerCase())
+);
+
+const createCategory = async () => {
+  const name = newCategoryName.value.trim();
+  if (!name) return;
+
+  // Jika nama kategori sudah ada, auto-pilih yang existing
+  const idx = existingCategoryNamesLower.value.indexOf(name.toLowerCase());
+  if (idx !== -1) {
+    const existing = dataStore.categories[idx];
+    formData.value.category_id = existing.id;
+    showNewCategory.value = false;
+    newCategoryName.value = "";
+    return;
+  }
+
+  creatingCategory.value = true;
+  try {
+    // Insert ke supabase
+    const { data, error } = await supabase
+      .from("categories")
+      .insert([{ name }])
+      .select()
+      .single();
+
+    if (error) throw error;
+
+    // Refresh store dan auto-pilih kategori baru
+    await dataStore.fetchCategories();
+    formData.value.category_id = data.id;
+
+    // Bereskan UI
+    showNewCategory.value = false;
+    newCategoryName.value = "";
+  } catch (err) {
+    console.error("Error creating category:", err);
+    alert("Gagal membuat kategori baru");
+  } finally {
+    creatingCategory.value = false;
+  }
+};
+
+const cancelCreateCategory = () => {
+  showNewCategory.value = false;
+  newCategoryName.value = "";
+};
+
 onMounted(async () => {
   loading.value = true;
   try {
@@ -424,12 +524,7 @@ onMounted(async () => {
   }
 });
 
-// Watch for filter changes and refetch data
-watch(
-  [search, selectedCategory, brandFilter, showLowStock],
-  () => {
-    // Filters are computed, no need to refetch
-  },
-  { debounce: 300 }
-);
+watch([search, selectedCategory, brandFilter, showLowStock], () => {}, {
+  debounce: 300,
+});
 </script>
