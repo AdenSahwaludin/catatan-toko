@@ -368,7 +368,10 @@
           </div>
 
           <v-alert
-            v-if="!settingsStore.isStockHidden && quickSaleQuantity > selectedItem.stock"
+            v-if="
+              !settingsStore.isStockHidden &&
+              quickSaleQuantity > selectedItem.stock
+            "
             type="error"
             variant="tonal"
             text
@@ -384,7 +387,9 @@
             color="primary"
             @click="addToCart"
             :disabled="
-              !quickSaleQuantity || (!settingsStore.isStockHidden && quickSaleQuantity > selectedItem.stock)
+              !quickSaleQuantity ||
+              (!settingsStore.isStockHidden &&
+                quickSaleQuantity > selectedItem.stock)
             "
           >
             Tambah ke Keranjang
@@ -445,7 +450,9 @@ const headers = computed(() => [
   { title: "Kategori", key: "categories.name", sortable: true },
   { title: "Model", key: "model", sortable: true },
   { title: "Harga", key: "price", sortable: true },
-  ...(settingsStore.isStockHidden ? [] : [{ title: "Stok", key: "stock", sortable: true }]),
+  ...(settingsStore.isStockHidden
+    ? []
+    : [{ title: "Stok", key: "stock", sortable: true }]),
   { title: "Aksi", key: "actions", sortable: false, width: 100 },
 ]);
 

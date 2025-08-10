@@ -300,7 +300,9 @@ const headers = computed(() => [
   { title: "Merek", key: "brand", sortable: true },
   { title: "Model", key: "model", sortable: true },
   { title: "Harga", key: "price", sortable: true },
-  ...(settingsStore.isStockHidden ? [] : [{ title: "Stok", key: "stock", sortable: true }]),
+  ...(settingsStore.isStockHidden
+    ? []
+    : [{ title: "Stok", key: "stock", sortable: true }]),
   { title: "Aksi", key: "actions", sortable: false, width: 120 },
 ]);
 

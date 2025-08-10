@@ -1,7 +1,7 @@
-import { defineStore } from 'pinia';
-import { ref, computed } from 'vue';
+import { defineStore } from "pinia";
+import { ref, computed } from "vue";
 
-export const useSettingsStore = defineStore('settings', () => {
+export const useSettingsStore = defineStore("settings", () => {
   // State
   const settings = ref({
     minSaleAmount: 1000,
@@ -16,23 +16,23 @@ export const useSettingsStore = defineStore('settings', () => {
 
   // Actions
   const loadSettings = () => {
-    const saved = localStorage.getItem('appSettings');
+    const saved = localStorage.getItem("appSettings");
     if (saved) {
       try {
         const parsedSettings = JSON.parse(saved);
         settings.value = { ...settings.value, ...parsedSettings };
       } catch (error) {
-        console.error('Error loading settings:', error);
+        console.error("Error loading settings:", error);
       }
     }
   };
 
   const saveSettings = () => {
     try {
-      localStorage.setItem('appSettings', JSON.stringify(settings.value));
+      localStorage.setItem("appSettings", JSON.stringify(settings.value));
       return true;
     } catch (error) {
-      console.error('Error saving settings:', error);
+      console.error("Error saving settings:", error);
       return false;
     }
   };
@@ -62,12 +62,12 @@ export const useSettingsStore = defineStore('settings', () => {
   return {
     // State
     settings,
-    
+
     // Computed
     isStockHidden,
     lowStockThreshold,
     minSaleAmount,
-    
+
     // Actions
     loadSettings,
     saveSettings,

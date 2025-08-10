@@ -283,13 +283,17 @@
                   :class="{
                     'item-card': true,
                     'item-in-cart': isInCart(item.id),
-                    'item-out-of-stock': !settingsStore.isStockHidden && item.stock === 0,
+                    'item-out-of-stock':
+                      !settingsStore.isStockHidden && item.stock === 0,
                   }"
                   @click="handleItemClick(item)"
                 >
                   <v-card-text class="pa-3">
                     <!-- Stock indicator -->
-                    <div v-if="!settingsStore.isStockHidden" class="d-flex justify-end mb-2">
+                    <div
+                      v-if="!settingsStore.isStockHidden"
+                      class="d-flex justify-end mb-2"
+                    >
                       <v-chip
                         :color="
                           item.stock < 5
@@ -333,7 +337,10 @@
                         {{ getCartQuantity(item.id) }}
                       </v-chip>
                     </div>
-                    <div v-else-if="settingsStore.isStockHidden || item.stock > 0" class="text-center">
+                    <div
+                      v-else-if="settingsStore.isStockHidden || item.stock > 0"
+                      class="text-center"
+                    >
                       <v-icon
                         size="small"
                         color="primary"
@@ -988,7 +995,9 @@ const itemHeaders = computed(() => [
   { title: "Kategori", key: "categories.name", sortable: true },
   { title: "Merek", key: "brand", sortable: true },
   { title: "Harga", key: "price", sortable: true },
-  ...(settingsStore.isStockHidden ? [] : [{ title: "Stok", key: "stock", sortable: true }]),
+  ...(settingsStore.isStockHidden
+    ? []
+    : [{ title: "Stok", key: "stock", sortable: true }]),
   { title: "Status", key: "actions", sortable: false, width: 100 },
 ]);
 
@@ -1362,7 +1371,9 @@ const submitItemsSale = async () => {
         }
       }
     } else {
-      console.log("Stock validation skipped because stock is hidden in settings");
+      console.log(
+        "Stock validation skipped because stock is hidden in settings"
+      );
     }
 
     // If there are stock errors, show them and stop
@@ -1410,7 +1421,9 @@ const submitItemsSale = async () => {
       for (const cartItem of cart.value) {
         // Skip stock update for custom items
         if (cartItem.isCustom) {
-          console.log(`Skipping stock update for custom item: ${cartItem.name}`);
+          console.log(
+            `Skipping stock update for custom item: ${cartItem.name}`
+          );
           continue;
         }
 

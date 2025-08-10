@@ -70,7 +70,9 @@
               v-model="settingsStore.settings.hideStock"
               color="warning"
               label="Sembunyikan Informasi Stok"
-              :prepend-icon="settingsStore.settings.hideStock ? 'mdi-eye-off' : 'mdi-eye'"
+              :prepend-icon="
+                settingsStore.settings.hideStock ? 'mdi-eye-off' : 'mdi-eye'
+              "
             />
             <div class="text-caption text-medium-emphasis">
               Menyembunyikan semua informasi stok produk di seluruh aplikasi

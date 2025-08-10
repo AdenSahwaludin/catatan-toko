@@ -1401,7 +1401,9 @@ const submitItemsSale = async () => {
       for (const cartItem of cart.value) {
         // Skip stock update for custom items
         if (cartItem.isCustom) {
-          console.log(`Skipping stock update for custom item: ${cartItem.name}`);
+          console.log(
+            `Skipping stock update for custom item: ${cartItem.name}`
+          );
           continue;
         }
 
