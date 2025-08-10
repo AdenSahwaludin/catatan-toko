@@ -756,205 +756,11 @@
       </v-card>
     </v-dialog>
 
-    <!-- Receipt Modal -->
-    <v-dialog v-model="receiptDialog" max-width="400px">
-      <v-card>
-        <v-card-title class="text-center py-3">
-          <v-icon class="mr-2">mdi-receipt</v-icon>
-          Struk Penjualan
-        </v-card-title>
-        <v-divider />
-
-        <!-- Receipt Content -->
-        <div
-          id="receipt-content"
-          class="pa-4"
-          style="
-            background: white;
-            color: black;
-            font-family: 'Courier New', monospace;
-          "
-        >
-          <!-- Header -->
-          <div class="text-center mb-3">
-            <!-- Logo -->
-            <div style="margin-bottom: 10px">
-              <img
-                src="/logo.jpg"
-                alt="Mega Teknik Logo"
-                style="max-width: 80px; max-height: 80px; object-fit: contain"
-                onerror="this.style.display='none'"
-              />
-            </div>
-            <div style="font-weight: bold; font-size: 18px; margin-bottom: 5px">
-              MEGA TEKNIK
-            </div>
-            <div style="font-size: 12px; line-height: 1.3">
-              Peralatan Teknik & Elektronik<br />
-              Jl. Contoh No. 123, Kota<br />
-              Telp: (021) 12345678
-            </div>
-            <div style="border-top: 1px dashed black; margin: 10px 0"></div>
-          </div>
-
-          <!-- Sale Info -->
-          <div style="font-size: 12px; margin-bottom: 15px">
-            <div style="display: flex; justify-content: space-between">
-              <span>Tanggal:</span>
-              <span>{{ formatDate(new Date()) }}</span>
-            </div>
-            <div style="display: flex; justify-content: space-between">
-              <span>Kasir:</span>
-              <span>{{ authStore.user?.email?.split("@")[0] || "Admin" }}</span>
-            </div>
-            <div style="border-top: 1px dashed black; margin: 10px 0"></div>
-          </div>
-
-          <!-- Items -->
-          <div style="font-size: 12px; margin-bottom: 15px">
-            <template v-if="inputMode === 'manual'">
-              <div
-                v-for="(item, index) in manualItems"
-                :key="index"
-                style="margin-bottom: 8px"
-              >
-                <div style="display: flex; justify-content: space-between">
-                  <span style="font-weight: bold">{{ item.name }}</span>
-                </div>
-                <div style="display: flex; justify-content: space-between">
-                  <span>{{ item.qty }} x {{ formatCurrency(item.price) }}</span>
-                  <span>{{ formatCurrency(item.qty * item.price) }}</span>
-                </div>
-              </div>
-            </template>
-
-            <template v-else>
-              <!-- Items Count Summary -->
-              <div
-                style="
-                  font-size: 11px;
-                  color: #666;
-                  margin-bottom: 8px;
-                  text-align: center;
-                "
-              >
-                {{ lastSaleCart.length }} item{{
-                  lastSaleCart.length > 1 ? "s" : ""
-                }}
-                dibeli
-              </div>
-
-              <div
-                v-for="(item, index) in lastSaleCart"
-                :key="index"
-                style="
-                  margin-bottom: 12px;
-                  padding-bottom: 8px;
-                  border-bottom: 1px dotted #ccc;
-                "
-              >
-                <div
-                  style="
-                    display: flex;
-                    justify-content: space-between;
-                    margin-bottom: 2px;
-                  "
-                >
-                  <span style="font-weight: bold; font-size: 13px">{{
-                    item.name
-                  }}</span>
-                </div>
-                <div style="font-size: 10px; color: #666; margin-bottom: 3px">
-                  <template v-if="item.isCustom">
-                    <span>{{ item.type || "Custom Item" }}</span>
-                  </template>
-                  <template v-else>
-                    <div>
-                      {{ item.brand || "No Brand"
-                      }}<span v-if="item.model"> - {{ item.model }}</span>
-                    </div>
-                  </template>
-                </div>
-                <div
-                  style="
-                    display: flex;
-                    justify-content: space-between;
-                    font-size: 12px;
-                  "
-                >
-                  <span
-                    >{{ item.quantity }} x
-                    {{ formatCurrency(item.price) }}</span
-                  >
-                  <span style="font-weight: bold">{{
-                    formatCurrency(item.quantity * item.price)
-                  }}</span>
-                </div>
-              </div>
-            </template>
-
-            <div style="border-top: 1px dashed black; margin: 10px 0"></div>
-          </div>
-
-          <!-- Total -->
-          <div style="font-size: 14px; font-weight: bold; margin-bottom: 15px">
-            <div style="display: flex; justify-content: space-between">
-              <span>TOTAL:</span>
-              <span>{{ formatCurrency(lastSaleAmount) }}</span>
-            </div>
-
-            <template v-if="lastSalePaid !== null">
-              <div
-                style="
-                  display: flex;
-                  justify-content: space-between;
-                  font-weight: 600;
-                  margin-top: 6px;
-                "
-              >
-                <span>DIBAYAR:</span>
-                <span>{{ formatCurrency(lastSalePaid) }}</span>
-              </div>
-              <div
-                style="
-                  display: flex;
-                  justify-content: space-between;
-                  font-weight: 800;
-                  margin-top: 6px;
-                "
-              >
-                <span>KEMBALIAN:</span>
-                <span>{{ formatCurrency(lastSaleChange) }}</span>
-              </div>
-            </template>
-          </div>
-
-          <!-- Footer -->
-          <div style="font-size: 11px; text-align: center; margin-top: 20px">
-            <div
-              style="border-top: 1px dashed black; margin-bottom: 10px"
-            ></div>
-            <div>Terima kasih atas kunjungan Anda!</div>
-            <div>Barang yang sudah dibeli tidak dapat ditukar</div>
-          </div>
-        </div>
-
-        <v-card-actions class="px-6 pb-6">
-          <v-btn
-            color="secondary"
-            variant="outlined"
-            @click="receiptDialog = false"
-            class="flex-1"
-          >
-            Batal
-          </v-btn>
-          <v-btn color="primary" @click="downloadReceipt" class="flex-1 ml-3">
-            <v-icon class="mr-2">mdi-download</v-icon>
-            Unduh Struk
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <!-- Receipt Modal using Nota Component -->
+    <Nota 
+      v-model="receiptDialog" 
+      :sale-data="receiptSaleData"
+    />
 
     <!-- Custom Item Dialog -->
     <v-dialog v-model="customItemDialog" max-width="500px">
@@ -1126,8 +932,13 @@ import { ref, computed, onMounted, watch, nextTick } from "vue";
 import { useAuthStore } from "@/stores/auth";
 import { useDataStore } from "@/stores/data";
 import { useNotificationStore } from "@/stores/notifications";
-import { createSale, updateItemStock, updateSalePayment } from "@/utils/supabase";
+import {
+  createSale,
+  updateItemStock,
+  updateSalePayment,
+} from "@/utils/supabase";
 import { formatCurrency, validateInput } from "@/utils/helpers";
+import Nota from "@/components/Nota.vue";
 
 const authStore = useAuthStore();
 const dataStore = useDataStore();
@@ -1301,6 +1112,34 @@ const cartTotal = computed(() => {
 
     return sum + subtotal;
   }, 0);
+});
+
+const receiptSaleData = computed(() => {
+  const baseData = {
+    total: lastSaleAmount.value,
+    paid: lastSalePaid.value,
+    change: lastSaleChange.value,
+    created_at: new Date().toISOString(),
+    kasir: authStore.user?.email?.split("@")[0] || "Admin"
+  }
+  
+  if (inputMode.value === 'manual') {
+    return {
+      ...baseData,
+      details: {
+        type: 'manual',
+        notes: manualNotes.value
+      }
+    }
+  } else {
+    return {
+      ...baseData,
+      details: {
+        type: 'items',
+        items: lastSaleCart.value
+      }
+    }
+  }
 });
 
 // Handle item click - main function for adding items to cart
@@ -1532,9 +1371,13 @@ const submitItemsSale = async () => {
         items: cart.value.map((item) => ({
           id: item.id,
           name: item.name,
+          brand: item.brand || (item.isCustom ? "Custom" : "Tanpa Merek"),
+          model: item.model || "",
           price: item.price,
           quantity: item.quantity,
           subtotal: item.price * item.quantity,
+          isCustom: item.isCustom || false,
+          type: item.type || (item.isCustom ? "Custom Item" : "")
         })),
       },
       created_at: new Date().toISOString(),
@@ -1569,7 +1412,15 @@ const submitItemsSale = async () => {
     }
 
     lastSaleAmount.value = cartTotal.value;
-    lastSaleCart.value = [...cart.value]; // Save cart data before clearing
+    // Save cart data with complete item information before clearing
+    lastSaleCart.value = cart.value.map(cartItem => ({
+      ...cartItem,
+      // Ensure all necessary fields are included
+      brand: cartItem.brand || (cartItem.isCustom ? "Custom" : "No Brand"),
+      model: cartItem.model || "",
+      isCustom: cartItem.isCustom || false,
+      type: cartItem.type || (cartItem.isCustom ? "Custom Item" : "")
+    }));
     successDialog.value = true;
     lastSalePaid.value = null;
     lastSaleChange.value = null;
@@ -1666,63 +1517,6 @@ const printReceipt = () => {
   receiptDialog.value = true;
 };
 
-const formatDate = (date) => {
-  return new Intl.DateTimeFormat("id-ID", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date);
-};
-
-const downloadReceipt = () => {
-  const receiptContent = document.getElementById("receipt-content");
-
-  // Create a new window for printing
-  const printWindow = window.open("", "_blank", "width=400,height=600");
-
-  printWindow.document.write(`
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <title>Struk Penjualan</title>
-      <style>
-        body {
-          margin: 0;
-          padding: 20px;
-          font-family: 'Courier New', monospace;
-          background: white;
-          color: black;
-        }
-        @media print {
-          body { margin: 0; padding: 10px; }
-        }
-        .logo {
-          max-width: 80px;
-          max-height: 80px;
-          object-fit: contain;
-        }
-      </style>
-    </head>
-    <body>
-      ${receiptContent.innerHTML}
-    </body>
-    </html>
-  `);
-
-  printWindow.document.close();
-  printWindow.focus();
-
-  // Auto print after a short delay
-  setTimeout(() => {
-    printWindow.print();
-    printWindow.close();
-  }, 500);
-
-  receiptDialog.value = false;
-};
-
 // Custom item functions
 const closeCustomItemDialog = () => {
   customItemDialog.value = false;
@@ -1816,12 +1610,12 @@ const confirmPayment = async (shouldPrint) => {
         paid: lastSalePaid.value,
         change: lastSaleChange.value,
       });
-      
+
       const result = await updateSalePayment(lastSaleId.value, {
         paid: lastSalePaid.value,
         change: lastSaleChange.value,
       });
-      
+
       console.log("Payment info saved to database successfully:", result);
     } catch (error) {
       console.error("Error saving payment info:", error);

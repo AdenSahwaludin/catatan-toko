@@ -99,7 +99,7 @@ export const getSales = async (filters = {}) => {
 
 export const createSale = async (saleData) => {
   console.log("Creating sale with data:", saleData);
-  
+
   const { data, error } = await supabase
     .from("sales")
     .insert([saleData])
@@ -109,7 +109,7 @@ export const createSale = async (saleData) => {
     console.error("Error creating sale:", error);
     throw error;
   }
-  
+
   console.log("Sale created successfully:", data[0]);
   return data[0];
 };
@@ -136,7 +136,7 @@ export const createItem = async (itemData) => {
 
 export const updateSalePayment = async (saleId, paymentData) => {
   console.log("Updating payment for sale:", saleId, paymentData);
-  
+
   // Update payment columns directly
   const updateData = {
     paid: paymentData.paid,
@@ -156,7 +156,7 @@ export const updateSalePayment = async (saleId, paymentData) => {
     console.error("Error updating sale payment:", error);
     throw error;
   }
-  
+
   console.log("Payment update result:", data[0]);
   return data[0];
 };

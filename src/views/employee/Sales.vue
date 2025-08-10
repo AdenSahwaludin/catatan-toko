@@ -413,6 +413,19 @@
                     <v-chip color="warning" size="small">Diedit Admin</v-chip>
                   </v-list-item-subtitle>
                 </v-list-item>
+                <!-- Payment Info -->
+                <v-list-item v-if="selectedSale.paid !== null && selectedSale.paid !== undefined">
+                  <v-list-item-title>Dibayar</v-list-item-title>
+                  <v-list-item-subtitle>{{
+                    formatCurrency(selectedSale.paid)
+                  }}</v-list-item-subtitle>
+                </v-list-item>
+                <v-list-item v-if="selectedSale.change !== null && selectedSale.change !== undefined">
+                  <v-list-item-title>Kembalian</v-list-item-title>
+                  <v-list-item-subtitle>{{
+                    formatCurrency(selectedSale.change)
+                  }}</v-list-item-subtitle>
+                </v-list-item>
               </v-list>
             </v-col>
 
@@ -496,185 +509,11 @@
       </v-card>
     </v-dialog>
 
-    <!-- Receipt Modal -->
-    <v-dialog v-model="receiptDialog" max-width="400px">
-      <v-card>
-        <v-card-title class="text-center py-3">
-          <v-icon class="mr-2">mdi-receipt</v-icon>
-          Struk Penjualan
-        </v-card-title>
-        <v-divider />
-
-        <!-- Receipt Content -->
-        <div
-          id="receipt-content"
-          class="pa-4"
-          style="
-            background: white;
-            color: black;
-            font-family: 'Courier New', monospace;
-          "
-        >
-          <!-- Header -->
-          <div class="text-center mb-3">
-            <!-- Logo -->
-            <div style="margin-bottom: 10px">
-              <img
-                src="/logo.jpg"
-                alt="Mega Teknik Logo"
-                style="max-width: 80px; max-height: 80px; object-fit: contain"
-                onerror="this.style.display='none'"
-              />
-            </div>
-            <div style="font-weight: bold; font-size: 18px; margin-bottom: 5px">
-              MEGA TEKNIK
-            </div>
-            <div style="font-size: 12px; line-height: 1.3">
-              Peralatan Teknik & Elektronik<br />
-              Jl. Contoh No. 123, Kota<br />
-              Telp: (021) 12345678
-            </div>
-            <div style="border-top: 1px dashed black; margin: 10px 0"></div>
-          </div>
-
-          <!-- Sale Info -->
-          <div style="font-size: 12px; margin-bottom: 15px">
-            <div style="display: flex; justify-content: space-between">
-              <span>Tanggal:</span>
-              <span>{{
-                selectedSale
-                  ? formatDate(new Date(selectedSale.created_at))
-                  : ""
-              }}</span>
-            </div>
-            <div style="display: flex; justify-content: space-between">
-              <span>Kasir:</span>
-              <span>{{ authStore.user?.email?.split("@")[0] || "Admin" }}</span>
-            </div>
-            <div style="border-top: 1px dashed black; margin: 10px 0"></div>
-          </div>
-
-          <!-- Items -->
-          <div style="font-size: 12px; margin-bottom: 15px" v-if="selectedSale">
-            <template v-if="selectedSale.details?.type === 'manual'">
-              <div style="margin-bottom: 8px">
-                <div style="display: flex; justify-content: space-between">
-                  <span style="font-weight: bold">Penjualan Manual</span>
-                </div>
-                <div
-                  v-if="selectedSale.details?.notes"
-                  style="font-size: 10px; color: #666; margin: 5px 0"
-                >
-                  Catatan: {{ selectedSale.details.notes }}
-                </div>
-                <div style="display: flex; justify-content: space-between">
-                  <span>1 x {{ formatCurrency(selectedSale.total) }}</span>
-                  <span>{{ formatCurrency(selectedSale.total) }}</span>
-                </div>
-              </div>
-            </template>
-
-            <template v-else-if="selectedSale.details?.items">
-              <!-- Items Count Summary -->
-              <div
-                style="
-                  font-size: 11px;
-                  color: #666;
-                  margin-bottom: 8px;
-                  text-align: center;
-                "
-              >
-                {{ selectedSale.details.items.length }} item{{
-                  selectedSale.details.items.length > 1 ? "s" : ""
-                }}
-                dibeli
-              </div>
-
-              <div
-                v-for="(item, index) in selectedSale.details.items"
-                :key="index"
-                style="
-                  margin-bottom: 12px;
-                  padding-bottom: 8px;
-                  border-bottom: 1px dotted #ccc;
-                "
-              >
-                <div
-                  style="
-                    display: flex;
-                    justify-content: space-between;
-                    margin-bottom: 2px;
-                  "
-                >
-                  <span style="font-weight: bold; font-size: 13px">{{
-                    item.name
-                  }}</span>
-                </div>
-                <div style="font-size: 10px; color: #666; margin-bottom: 3px">
-                  <div
-                    v-if="item.id && item.id.toString().startsWith('custom_')"
-                  >
-                    Custom Item
-                  </div>
-                  <div v-else>ID: {{ item.id || "N/A" }}</div>
-                </div>
-                <div
-                  style="
-                    display: flex;
-                    justify-content: space-between;
-                    font-size: 12px;
-                  "
-                >
-                  <span
-                    >{{ item.quantity }} x
-                    {{ formatCurrency(item.price) }}</span
-                  >
-                  <span style="font-weight: bold">{{
-                    formatCurrency(item.quantity * item.price)
-                  }}</span>
-                </div>
-              </div>
-            </template>
-
-            <div style="border-top: 1px dashed black; margin: 10px 0"></div>
-          </div>
-
-          <!-- Total -->
-          <div style="font-size: 14px; font-weight: bold; margin-bottom: 15px">
-            <div style="display: flex; justify-content: space-between">
-              <span>TOTAL:</span>
-              <span>{{
-                selectedSale ? formatCurrency(selectedSale.total) : "Rp 0"
-              }}</span>
-            </div>
-          </div>
-
-          <!-- Footer -->
-          <div style="font-size: 11px; text-align: center; margin-top: 20px">
-            <div
-              style="border-top: 1px dashed black; margin-bottom: 10px"
-            ></div>
-            <div>Terima kasih atas kunjungan Anda!</div>
-            <div>Barang yang sudah dibeli tidak dapat ditukar</div>
-          </div>
-        </div>
-
-        <v-card-actions class="px-6 pb-6">
-          <v-btn
-            color="secondary"
-            variant="outlined"
-            @click="receiptDialog = false"
-            class="flex-1"
-          >
-            Tutup
-          </v-btn>
-          <v-btn color="primary" @click="downloadReceipt" class="flex-1 ml-3">
-            <v-icon class="mr-2">mdi-download</v-icon>
-            Unduh Struk
-          </v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
+    <!-- Receipt Modal using Nota Component -->
+    <Nota 
+      v-model="receiptDialog" 
+      :sale-data="receiptSaleData"
+    />
   </div>
 </template>
 
@@ -684,6 +523,7 @@ import { useAuthStore } from "@/stores/auth";
 import { useDataStore } from "@/stores/data";
 import { updateSale, deleteSale as deleteSaleAPI } from "@/utils/supabase";
 import { formatCurrency, formatDateTime, validateInput } from "@/utils/helpers";
+import Nota from "@/components/Nota.vue";
 
 const authStore = useAuthStore();
 const dataStore = useDataStore();
@@ -781,6 +621,35 @@ const paginatedSales = computed(() => {
 
 const hasActiveFilters = computed(() => {
   return dateFrom.value || dateTo.value || statusFilter.value;
+});
+
+const receiptSaleData = computed(() => {
+  if (!selectedSale.value) return {}
+  
+  // Enhance items data with complete information from database if available
+  let enhancedSale = {
+    ...selectedSale.value,
+    kasir: authStore.user?.email?.split("@")[0] || "Admin"
+  }
+  
+  // If this is an items sale, try to enhance the items data with current database info
+  if (enhancedSale.details?.type === 'items' && enhancedSale.details?.items) {
+    enhancedSale.details.items = enhancedSale.details.items.map(item => {
+      // Find current item data from store to get complete brand info
+      const currentItem = dataStore.items.find(dbItem => dbItem.id === item.id)
+      
+      return {
+        ...item,
+        // Use database info if available, otherwise fallback to stored data
+        brand: currentItem?.brand || item.brand || (item.id && item.id.toString().startsWith('custom_') ? "Custom" : "Tanpa Merek"),
+        model: currentItem?.model || item.model || "",
+        isCustom: item.id && item.id.toString().startsWith('custom_'),
+        type: item.type || (item.id && item.id.toString().startsWith('custom_') ? "Custom Item" : "")
+      }
+    })
+  }
+  
+  return enhancedSale
 });
 
 const todayTotal = computed(() => {
@@ -930,63 +799,6 @@ const refreshData = async () => {
 const printReceipt = (sale) => {
   selectedSale.value = sale;
   receiptDialog.value = true;
-};
-
-const formatDate = (date) => {
-  return new Intl.DateTimeFormat("id-ID", {
-    day: "2-digit",
-    month: "2-digit",
-    year: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-  }).format(date);
-};
-
-const downloadReceipt = () => {
-  const receiptContent = document.getElementById("receipt-content");
-
-  // Create a new window for printing
-  const printWindow = window.open("", "_blank", "width=400,height=600");
-
-  printWindow.document.write(`
-    <!DOCTYPE html>
-    <html>
-    <head>
-      <title>Struk Penjualan</title>
-      <style>
-        body {
-          margin: 0;
-          padding: 20px;
-          font-family: 'Courier New', monospace;
-          background: white;
-          color: black;
-        }
-        @media print {
-          body { margin: 0; padding: 10px; }
-        }
-        .logo {
-          max-width: 80px;
-          max-height: 80px;
-          object-fit: contain;
-        }
-      </style>
-    </head>
-    <body>
-      ${receiptContent.innerHTML}
-    </body>
-    </html>
-  `);
-
-  printWindow.document.close();
-  printWindow.focus();
-
-  // Auto print after a short delay
-  setTimeout(() => {
-    printWindow.print();
-    printWindow.close();
-  }, 500);
-
-  receiptDialog.value = false;
 };
 
 // Watch for filter changes and reset page
