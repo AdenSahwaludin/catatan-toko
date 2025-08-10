@@ -109,12 +109,23 @@
                 }}</span>
               </div>
               <div style="font-size: 10px; color: #666; margin-bottom: 3px">
-                <template v-if="item.isCustom || (item.id && item.id.toString().startsWith('custom_'))">
+                <template
+                  v-if="
+                    item.isCustom ||
+                    (item.id && item.id.toString().startsWith('custom_'))
+                  "
+                >
                   <span>{{ item.type || "Custom Item" }}</span>
                 </template>
                 <template v-else>
                   <div>
-                    {{ item.brand && item.brand !== "No Brand" ? item.brand : "Tanpa Merek" }}<span v-if="item.model && item.model.trim()"> - {{ item.model }}</span>
+                    {{
+                      item.brand && item.brand !== "No Brand"
+                        ? item.brand
+                        : "Tanpa Merek"
+                    }}<span v-if="item.model && item.model.trim()">
+                      - {{ item.model }}</span
+                    >
                   </div>
                 </template>
               </div>
@@ -125,7 +136,9 @@
                   font-size: 12px;
                 "
               >
-                <span>{{ item.quantity }} x {{ formatCurrency(item.price) }}</span>
+                <span
+                  >{{ item.quantity }} x {{ formatCurrency(item.price) }}</span
+                >
                 <span style="font-weight: bold">{{
                   formatCurrency(item.quantity * item.price)
                 }}</span>
@@ -144,7 +157,9 @@
           </div>
 
           <!-- Payment Info -->
-          <template v-if="saleData.paid !== null && saleData.paid !== undefined">
+          <template
+            v-if="saleData.paid !== null && saleData.paid !== undefined"
+          >
             <div
               style="
                 display: flex;
@@ -197,49 +212,49 @@
 </template>
 
 <script setup>
-import { computed } from 'vue'
-import { formatCurrency } from '@/utils/helpers'
+import { computed } from "vue";
+import { formatCurrency } from "@/utils/helpers";
 
 const props = defineProps({
   modelValue: {
     type: Boolean,
-    default: false
+    default: false,
   },
   saleData: {
     type: Object,
-    required: true
-  }
-})
+    required: true,
+  },
+});
 
-const emit = defineEmits(['update:modelValue'])
+const emit = defineEmits(["update:modelValue"]);
 
 const dialog = computed({
   get: () => props.modelValue,
-  set: (value) => emit('update:modelValue', value)
-})
+  set: (value) => emit("update:modelValue", value),
+});
 
 const formatDate = (dateString) => {
-  if (!dateString) return ''
-  
-  const date = new Date(dateString)
+  if (!dateString) return "";
+
+  const date = new Date(dateString);
   return new Intl.DateTimeFormat("id-ID", {
     day: "2-digit",
-    month: "2-digit", 
+    month: "2-digit",
     year: "numeric",
     hour: "2-digit",
     minute: "2-digit",
-  }).format(date)
-}
+  }).format(date);
+};
 
 const closeDialog = () => {
-  dialog.value = false
-}
+  dialog.value = false;
+};
 
 const downloadReceipt = () => {
-  const receiptContent = document.getElementById("receipt-content")
+  const receiptContent = document.getElementById("receipt-content");
 
   // Create a new window for printing
-  const printWindow = window.open("", "_blank", "width=400,height=600")
+  const printWindow = window.open("", "_blank", "width=400,height=600");
 
   printWindow.document.write(`
     <!DOCTYPE html>
@@ -268,17 +283,17 @@ const downloadReceipt = () => {
       ${receiptContent.innerHTML}
     </body>
     </html>
-  `)
+  `);
 
-  printWindow.document.close()
-  printWindow.focus()
+  printWindow.document.close();
+  printWindow.focus();
 
   // Auto print after a short delay
   setTimeout(() => {
-    printWindow.print()
-    printWindow.close()
-  }, 500)
+    printWindow.print();
+    printWindow.close();
+  }, 500);
 
-  closeDialog()
-}
+  closeDialog();
+};
 </script>

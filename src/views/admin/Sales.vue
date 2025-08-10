@@ -225,13 +225,23 @@
                   }}</v-list-item-subtitle>
                 </v-list-item>
                 <!-- Payment Info -->
-                <v-list-item v-if="selectedSale.paid !== null && selectedSale.paid !== undefined">
+                <v-list-item
+                  v-if="
+                    selectedSale.paid !== null &&
+                    selectedSale.paid !== undefined
+                  "
+                >
                   <v-list-item-title>Dibayar</v-list-item-title>
                   <v-list-item-subtitle>{{
                     formatCurrency(selectedSale.paid)
                   }}</v-list-item-subtitle>
                 </v-list-item>
-                <v-list-item v-if="selectedSale.change !== null && selectedSale.change !== undefined">
+                <v-list-item
+                  v-if="
+                    selectedSale.change !== null &&
+                    selectedSale.change !== undefined
+                  "
+                >
                   <v-list-item-title>Kembalian</v-list-item-title>
                   <v-list-item-subtitle>{{
                     formatCurrency(selectedSale.change)
@@ -321,10 +331,7 @@
     </v-dialog>
 
     <!-- Receipt Modal using Nota Component -->
-    <Nota 
-      v-model="receiptDialog" 
-      :sale-data="receiptSaleData"
-    />
+    <Nota v-model="receiptDialog" :sale-data="receiptSaleData" />
   </div>
 </template>
 
@@ -381,32 +388,43 @@ const employeeOptions = computed(() => [
 ]);
 
 const receiptSaleData = computed(() => {
-  if (!selectedSale.value) return {}
-  
+  if (!selectedSale.value) return {};
+
   // Enhance items data with complete information from database if available
   let enhancedSale = {
     ...selectedSale.value,
-    kasir: selectedSale.value.users?.email?.split("@")[0] || "Admin"
-  }
-  
+    kasir: selectedSale.value.users?.email?.split("@")[0] || "Admin",
+  };
+
   // If this is an items sale, try to enhance the items data with current database info
-  if (enhancedSale.details?.type === 'items' && enhancedSale.details?.items) {
-    enhancedSale.details.items = enhancedSale.details.items.map(item => {
+  if (enhancedSale.details?.type === "items" && enhancedSale.details?.items) {
+    enhancedSale.details.items = enhancedSale.details.items.map((item) => {
       // Find current item data from store to get complete brand info
-      const currentItem = dataStore.items.find(dbItem => dbItem.id === item.id)
-      
+      const currentItem = dataStore.items.find(
+        (dbItem) => dbItem.id === item.id
+      );
+
       return {
         ...item,
         // Use database info if available, otherwise fallback to stored data
-        brand: currentItem?.brand || item.brand || (item.id && item.id.toString().startsWith('custom_') ? "Custom" : "Tanpa Merek"),
+        brand:
+          currentItem?.brand ||
+          item.brand ||
+          (item.id && item.id.toString().startsWith("custom_")
+            ? "Custom"
+            : "Tanpa Merek"),
         model: currentItem?.model || item.model || "",
-        isCustom: item.id && item.id.toString().startsWith('custom_'),
-        type: item.type || (item.id && item.id.toString().startsWith('custom_') ? "Custom Item" : "")
-      }
-    })
+        isCustom: item.id && item.id.toString().startsWith("custom_"),
+        type:
+          item.type ||
+          (item.id && item.id.toString().startsWith("custom_")
+            ? "Custom Item"
+            : ""),
+      };
+    });
   }
-  
-  return enhancedSale
+
+  return enhancedSale;
 });
 
 const filteredSales = computed(() => {

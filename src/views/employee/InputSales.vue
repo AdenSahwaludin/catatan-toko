@@ -757,10 +757,7 @@
     </v-dialog>
 
     <!-- Receipt Modal using Nota Component -->
-    <Nota 
-      v-model="receiptDialog" 
-      :sale-data="receiptSaleData"
-    />
+    <Nota v-model="receiptDialog" :sale-data="receiptSaleData" />
 
     <!-- Custom Item Dialog -->
     <v-dialog v-model="customItemDialog" max-width="500px">
@@ -1120,25 +1117,25 @@ const receiptSaleData = computed(() => {
     paid: lastSalePaid.value,
     change: lastSaleChange.value,
     created_at: new Date().toISOString(),
-    kasir: authStore.user?.email?.split("@")[0] || "Admin"
-  }
-  
-  if (inputMode.value === 'manual') {
+    kasir: authStore.user?.email?.split("@")[0] || "Admin",
+  };
+
+  if (inputMode.value === "manual") {
     return {
       ...baseData,
       details: {
-        type: 'manual',
-        notes: manualNotes.value
-      }
-    }
+        type: "manual",
+        notes: manualNotes.value,
+      },
+    };
   } else {
     return {
       ...baseData,
       details: {
-        type: 'items',
-        items: lastSaleCart.value
-      }
-    }
+        type: "items",
+        items: lastSaleCart.value,
+      },
+    };
   }
 });
 
@@ -1377,7 +1374,7 @@ const submitItemsSale = async () => {
           quantity: item.quantity,
           subtotal: item.price * item.quantity,
           isCustom: item.isCustom || false,
-          type: item.type || (item.isCustom ? "Custom Item" : "")
+          type: item.type || (item.isCustom ? "Custom Item" : ""),
         })),
       },
       created_at: new Date().toISOString(),
@@ -1413,13 +1410,13 @@ const submitItemsSale = async () => {
 
     lastSaleAmount.value = cartTotal.value;
     // Save cart data with complete item information before clearing
-    lastSaleCart.value = cart.value.map(cartItem => ({
+    lastSaleCart.value = cart.value.map((cartItem) => ({
       ...cartItem,
       // Ensure all necessary fields are included
       brand: cartItem.brand || (cartItem.isCustom ? "Custom" : "No Brand"),
       model: cartItem.model || "",
       isCustom: cartItem.isCustom || false,
-      type: cartItem.type || (cartItem.isCustom ? "Custom Item" : "")
+      type: cartItem.type || (cartItem.isCustom ? "Custom Item" : ""),
     }));
     successDialog.value = true;
     lastSalePaid.value = null;
