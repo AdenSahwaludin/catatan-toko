@@ -131,6 +131,40 @@
                 />
               </v-col>
 
+              <v-col cols="12" sm="8">
+                <v-text-field
+                  v-model="formData.barcode"
+                  label="Barcode (EAN-13)"
+                  variant="outlined"
+                  placeholder="Masukkan atau scan barcode EAN-13"
+                  :rules="[validateBarcode]"
+                  clearable
+                >
+                  <template #append-inner>
+                    <v-btn
+                      icon="mdi-qrcode-scan"
+                      variant="text"
+                      size="small"
+                      @click="openBarcodeScanner"
+                      :disabled="saving"
+                    />
+                  </template>
+                </v-text-field>
+              </v-col>
+
+              <v-col cols="12" sm="4" class="d-flex align-center">
+                <v-btn
+                  color="primary"
+                  variant="outlined"
+                  prepend-icon="mdi-qrcode-scan"
+                  @click="openBarcodeScanner"
+                  :disabled="saving"
+                  block
+                >
+                  Scan Barcode
+                </v-btn>
+              </v-col>
+
               <v-col cols="12" sm="6">
                 <div class="d-flex align-center justify-space-between mb-1">
                   <span class="text-subtitle-2">Kategori</span>
@@ -257,6 +291,9 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <!-- Barcode Scanner -->
+    <BarcodeScanner v-model="barcodeScanner" @detected="onBarcodeDetected" />
   </div>
 </template>
 
@@ -266,6 +303,7 @@ import { useDataStore } from "@/stores/data";
 import { useSettingsStore } from "@/stores/settings";
 import { supabase } from "@/utils/supabase";
 import { formatCurrency, validateInput } from "@/utils/helpers";
+import BarcodeScanner from "@/components/BarcodeScanner.vue";
 
 const dataStore = useDataStore();
 const settingsStore = useSettingsStore();
@@ -275,6 +313,7 @@ const dialog = ref(false);
 const deleteDialog = ref(false);
 const saving = ref(false);
 const deleting = ref(false);
+const barcodeScanner = ref(false);
 
 const search = ref("");
 const selectedCategory = ref("");
@@ -292,10 +331,12 @@ const formData = ref({
   model: "",
   price: "",
   stock: "",
+  barcode: "",
 });
 
 const headers = computed(() => [
   { title: "Nama", key: "name", sortable: true },
+  { title: "Barcode", key: "barcode", sortable: true },
   { title: "Kategori", key: "categories.name", sortable: true },
   { title: "Merek", key: "brand", sortable: true },
   { title: "Model", key: "model", sortable: true },
@@ -382,6 +423,7 @@ const openDialog = (item = null) => {
       model: "",
       price: "",
       stock: "",
+      barcode: "",
     };
   }
   dialog.value = true;
@@ -409,6 +451,7 @@ const saveItem = async () => {
       model: formData.value.model,
       price: Number(formData.value.price),
       stock: Number(formData.value.stock),
+      barcode: formData.value.barcode || null,
     };
 
     if (editingItem.value) {
@@ -518,6 +561,60 @@ const createCategory = async () => {
 const cancelCreateCategory = () => {
   showNewCategory.value = false;
   newCategoryName.value = "";
+};
+
+// Barcode validation
+const validateBarcode = (code) => {
+  if (!code) return true; // Optional field
+
+  // Basic validation - should be 13 digits
+  const cleanCode = code.toString().replace(/\D/g, "");
+  if (cleanCode.length !== 13) return "Barcode harus 13 digit (EAN-13)";
+
+  // EAN-13 checksum validation
+  let sum = 0;
+  for (let i = 0; i < 12; i++) {
+    const digit = parseInt(cleanCode[i]);
+    sum += i % 2 === 0 ? digit : digit * 3;
+  }
+  const checkDigit = (10 - (sum % 10)) % 10;
+
+  if (parseInt(cleanCode[12]) !== checkDigit) {
+    return "Checksum barcode EAN-13 tidak valid";
+  }
+
+  return true;
+};
+
+// Barcode scanner functions
+const openBarcodeScanner = () => {
+  barcodeScanner.value = true;
+};
+
+const onBarcodeDetected = async (barcode) => {
+  console.log("Barcode detected:", barcode);
+
+  // Check if barcode already exists in database
+  try {
+    const { data: existingItem, error } = await supabase
+      .from("items")
+      .select("id, name")
+      .eq("barcode", barcode)
+      .single();
+
+    if (
+      existingItem &&
+      (!editingItem.value || existingItem.id !== editingItem.value.id)
+    ) {
+      alert(`Barcode sudah digunakan oleh barang: "${existingItem.name}"`);
+      return;
+    }
+  } catch (error) {
+    // If no existing item found, continue
+    console.log("No existing barcode found, proceeding...");
+  }
+
+  formData.value.barcode = barcode;
 };
 
 onMounted(async () => {

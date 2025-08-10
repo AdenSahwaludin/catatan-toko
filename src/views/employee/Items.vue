@@ -13,11 +13,13 @@
           <v-col cols="12" sm="6" md="4">
             <v-text-field
               v-model="search"
-              label="Cari barang..."
+              label="Cari barang atau barcode..."
               prepend-inner-icon="mdi-magnify"
               variant="outlined"
               density="compact"
               clearable
+              hint="Ketik nama barang atau scan/ketik barcode"
+              persistent-hint
             />
           </v-col>
 
@@ -447,6 +449,7 @@ const debouncedSearch = ref("");
 
 const headers = computed(() => [
   { title: "Barang", key: "name", sortable: true },
+  { title: "Barcode", key: "barcode", sortable: true },
   { title: "Kategori", key: "categories.name", sortable: true },
   { title: "Model", key: "model", sortable: true },
   { title: "Harga", key: "price", sortable: true },
