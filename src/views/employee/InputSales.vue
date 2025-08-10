@@ -1147,7 +1147,8 @@ const receiptSaleData = computed(() => {
 
 // Handle item click - main function for adding items to cart
 const handleItemClick = (item) => {
-  if (item.stock === 0) {
+  // Skip stock validation if stock is hidden
+  if (!settingsStore.isStockHidden && item.stock === 0) {
     notificationStore.addNotification({
       type: "error",
       message: `Barang "${item.name}" sedang habis stok`,
@@ -1197,11 +1198,11 @@ const addToCart = (item) => {
   );
 
   if (existingIndex >= 0) {
-    // Check if we can increase quantity
+    // Check if we can increase quantity (skip if stock is hidden)
     const currentCartItem = cart.value[existingIndex];
     const newQuantity = currentCartItem.quantity + 1;
 
-    if (newQuantity > item.stock) {
+    if (!settingsStore.isStockHidden && newQuantity > item.stock) {
       notificationStore.addNotification({
         type: "error",
         message: `Stok "${item.name}" tidak mencukupi. Maksimal: ${item.stock}`,
@@ -1216,8 +1217,8 @@ const addToCart = (item) => {
       message: `"${item.name}" ditambahkan (${newQuantity})`,
     });
   } else {
-    // Check stock before adding new item
-    if (item.stock <= 0) {
+    // Check stock before adding new item (skip if stock is hidden)
+    if (!settingsStore.isStockHidden && item.stock <= 0) {
       notificationStore.addNotification({
         type: "error",
         message: `Barang "${item.name}" sedang habis stok`,
@@ -1253,8 +1254,8 @@ const updateCartQuantity = (index, newQuantity) => {
     return;
   }
 
-  // Validate against available stock for regular items
-  if (newQuantity > cartItem.stock) {
+  // Validate against available stock for regular items (skip if stock is hidden)
+  if (!settingsStore.isStockHidden && newQuantity > cartItem.stock) {
     notificationStore.addNotification({
       type: "error",
       message: `Stok "${cartItem.name}" tidak mencukupi. Maksimal: ${cartItem.stock}`,
@@ -1326,38 +1327,42 @@ const submitItemsSale = async () => {
     console.log("Refreshing items data before sale...");
     await dataStore.fetchItems();
 
-    // Validate stock availability before processing sale
+    // Validate stock availability before processing sale (skip when stock is hidden)
     const stockErrors = [];
 
-    for (const cartItem of cart.value) {
-      // Skip stock validation for custom items
-      if (cartItem.isCustom) {
-        console.log(`Skipping stock check for custom item: ${cartItem.name}`);
-        continue;
-      }
+    if (!settingsStore.isStockHidden) {
+      for (const cartItem of cart.value) {
+        // Skip stock validation for custom items
+        if (cartItem.isCustom) {
+          console.log(`Skipping stock check for custom item: ${cartItem.name}`);
+          continue;
+        }
 
-      // Find current item data to check stock
-      const currentItem = dataStore.items.find(
-        (item) => item.id === cartItem.id
-      );
-
-      console.log(`Checking item ${cartItem.name}:`, {
-        cartQuantity: cartItem.quantity,
-        currentStock: currentItem?.stock,
-        itemId: cartItem.id,
-        itemExists: !!currentItem,
-      });
-
-      if (!currentItem) {
-        stockErrors.push(`Barang "${cartItem.name}" tidak ditemukan`);
-        continue;
-      }
-
-      if (currentItem.stock < cartItem.quantity) {
-        stockErrors.push(
-          `Stok "${cartItem.name}" tidak mencukupi. Tersedia: ${currentItem.stock}, Diminta: ${cartItem.quantity}`
+        // Find current item data to check stock
+        const currentItem = dataStore.items.find(
+          (item) => item.id === cartItem.id
         );
+
+        console.log(`Checking item ${cartItem.name}:`, {
+          cartQuantity: cartItem.quantity,
+          currentStock: currentItem?.stock,
+          itemId: cartItem.id,
+          itemExists: !!currentItem,
+        });
+
+        if (!currentItem) {
+          stockErrors.push(`Barang "${cartItem.name}" tidak ditemukan`);
+          continue;
+        }
+
+        if (currentItem.stock < cartItem.quantity) {
+          stockErrors.push(
+            `Stok "${cartItem.name}" tidak mencukupi. Tersedia: ${currentItem.stock}, Diminta: ${cartItem.quantity}`
+          );
+        }
       }
+    } else {
+      console.log("Stock validation skipped because stock is hidden in settings");
     }
 
     // If there are stock errors, show them and stop
@@ -1400,18 +1405,22 @@ const submitItemsSale = async () => {
     lastSaleId.value = savedSale.id;
 
     console.log("Updating stock for items...");
-    // Update stock for each item (skip custom items)
-    for (const cartItem of cart.value) {
-      // Skip stock update for custom items
-      if (cartItem.isCustom) {
-        console.log(`Skipping stock update for custom item: ${cartItem.name}`);
-        continue;
-      }
+    // Update stock for each item (skip custom items and when stock is hidden)
+    if (!settingsStore.isStockHidden) {
+      for (const cartItem of cart.value) {
+        // Skip stock update for custom items
+        if (cartItem.isCustom) {
+          console.log(`Skipping stock update for custom item: ${cartItem.name}`);
+          continue;
+        }
 
-      console.log(
-        `Updating stock for ${cartItem.name} (${cartItem.id}), quantity: ${cartItem.quantity}`
-      );
-      await updateItemStock(cartItem.id, cartItem.quantity);
+        console.log(
+          `Updating stock for ${cartItem.name} (${cartItem.id}), quantity: ${cartItem.quantity}`
+        );
+        await updateItemStock(cartItem.id, cartItem.quantity);
+      }
+    } else {
+      console.log("Stock updates skipped because stock is hidden in settings");
     }
 
     lastSaleAmount.value = cartTotal.value;

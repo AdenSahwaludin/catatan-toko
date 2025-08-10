@@ -1396,18 +1396,22 @@ const submitItemsSale = async () => {
     lastSaleId.value = savedSale.id;
 
     console.log("Updating stock for items...");
-    // Update stock for each item (skip custom items)
-    for (const cartItem of cart.value) {
-      // Skip stock update for custom items
-      if (cartItem.isCustom) {
-        console.log(`Skipping stock update for custom item: ${cartItem.name}`);
-        continue;
-      }
+    // Update stock for each item (skip custom items and when stock is hidden)
+    if (!settingsStore.isStockHidden) {
+      for (const cartItem of cart.value) {
+        // Skip stock update for custom items
+        if (cartItem.isCustom) {
+          console.log(`Skipping stock update for custom item: ${cartItem.name}`);
+          continue;
+        }
 
-      console.log(
-        `Updating stock for ${cartItem.name} (${cartItem.id}), quantity: ${cartItem.quantity}`
-      );
-      await updateItemStock(cartItem.id, cartItem.quantity);
+        console.log(
+          `Updating stock for ${cartItem.name} (${cartItem.id}), quantity: ${cartItem.quantity}`
+        );
+        await updateItemStock(cartItem.id, cartItem.quantity);
+      }
+    } else {
+      console.log("Stock updates skipped because stock is hidden in settings");
     }
 
     lastSaleAmount.value = cartTotal.value;
