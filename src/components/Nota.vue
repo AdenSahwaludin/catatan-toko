@@ -151,12 +151,6 @@
 
         <!-- Total -->
         <div style="font-size: 14px; font-weight: bold; margin-bottom: 15px">
-          <div style="display: flex; justify-content: space-between">
-            <span>TOTAL:</span>
-            <span>{{ formatCurrency(saleData.total) }}</span>
-          </div>
-
-          <!-- Payment Info -->
           <template
             v-if="saleData.paid !== null && saleData.paid !== undefined"
           >
@@ -171,12 +165,20 @@
               <span>DIBAYAR:</span>
               <span>{{ formatCurrency(saleData.paid) }}</span>
             </div>
+          </template>
+          <div style="display: flex; justify-content: space-between">
+            <span>TOTAL:</span>
+            <span>{{ formatCurrency(saleData.total) }}</span>
+          </div>
+          <!-- Payment Info -->
+          <template
+            v-if="saleData.paid !== null && saleData.paid !== undefined"
+          >
             <div
               style="
                 display: flex;
                 justify-content: space-between;
                 font-weight: 800;
-                margin-top: 6px;
               "
             >
               <span>KEMBALIAN:</span>

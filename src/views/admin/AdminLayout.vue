@@ -345,6 +345,13 @@ const menuItems = computed(() => [
     subtitle: "Staff Management",
   },
   {
+    title: "Input Sales",
+    shortTitle: "Input",
+    icon: "mdi-cash-register",
+    to: "/admin/input-sales",
+    subtitle: "Create New Sales",
+  },
+  {
     title: "Sales",
     shortTitle: "Sales",
     icon: "mdi-chart-line",
@@ -376,9 +383,9 @@ const menuItems = computed(() => [
 const primaryMenuItems = computed(() => [
   menuItems.value[0], // Dashboard
   menuItems.value[1], // Items
-  menuItems.value[4], // Sales
-  menuItems.value[5], // Reports
-  menuItems.value[6], // Settings
+  menuItems.value[4], // Input Sales
+  menuItems.value[5], // Sales
+  menuItems.value[6], // Reports
 ]);
 
 const currentPageTitle = computed(() => {
