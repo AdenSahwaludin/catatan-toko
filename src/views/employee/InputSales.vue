@@ -116,6 +116,7 @@
             </v-col>
             <v-col cols="12" md="2">
               <v-switch
+                v-if="!settingsStore.isStockHidden"
                 v-model="showAvailableOnly"
                 label="Stok tersedia"
                 color="primary"
@@ -278,17 +279,17 @@
                 <v-card
                   :ripple="true"
                   hover
-                  :disabled="item.stock === 0"
+                  :disabled="!settingsStore.isStockHidden && item.stock === 0"
                   :class="{
                     'item-card': true,
                     'item-in-cart': isInCart(item.id),
-                    'item-out-of-stock': item.stock === 0,
+                    'item-out-of-stock': !settingsStore.isStockHidden && item.stock === 0,
                   }"
                   @click="handleItemClick(item)"
                 >
                   <v-card-text class="pa-3">
                     <!-- Stock indicator -->
-                    <div class="d-flex justify-end mb-2">
+                    <div v-if="!settingsStore.isStockHidden" class="d-flex justify-end mb-2">
                       <v-chip
                         :color="
                           item.stock < 5
@@ -332,7 +333,7 @@
                         {{ getCartQuantity(item.id) }}
                       </v-chip>
                     </div>
-                    <div v-else-if="item.stock > 0" class="text-center">
+                    <div v-else-if="settingsStore.isStockHidden || item.stock > 0" class="text-center">
                       <v-icon
                         size="small"
                         color="primary"
@@ -402,6 +403,7 @@
 
               <template #item.stock="{ item }">
                 <v-chip
+                  v-if="!settingsStore.isStockHidden"
                   :color="
                     item.stock < 5
                       ? 'error'
@@ -428,7 +430,7 @@
                     {{ getCartQuantity(item.id) }}
                   </v-chip>
                   <v-icon
-                    v-else-if="item.stock > 0"
+                    v-else-if="settingsStore.isStockHidden || item.stock > 0"
                     color="primary"
                     size="small"
                   >
@@ -586,6 +588,7 @@
                               "
                               :disabled="
                                 !cartItem.isCustom &&
+                                !settingsStore.isStockHidden &&
                                 cartItem.quantity >= cartItem.stock
                               "
                               density="compact"
@@ -673,6 +676,7 @@
                         "
                         :disabled="
                           !cartItem.isCustom &&
+                          !settingsStore.isStockHidden &&
                           cartItem.quantity >= cartItem.stock
                         "
                       />
@@ -929,6 +933,7 @@ import { ref, computed, onMounted, watch, nextTick } from "vue";
 import { useAuthStore } from "@/stores/auth";
 import { useDataStore } from "@/stores/data";
 import { useNotificationStore } from "@/stores/notifications";
+import { useSettingsStore } from "@/stores/settings";
 import {
   createSale,
   updateItemStock,
@@ -940,6 +945,7 @@ import Nota from "@/components/Nota.vue";
 const authStore = useAuthStore();
 const dataStore = useDataStore();
 const notificationStore = useNotificationStore();
+const settingsStore = useSettingsStore();
 
 const inputMode = ref("manual");
 const saving = ref(false);
@@ -977,14 +983,14 @@ const customItem = ref({
 });
 const customItemForm = ref();
 
-const itemHeaders = [
+const itemHeaders = computed(() => [
   { title: "Nama", key: "name", sortable: true },
   { title: "Kategori", key: "categories.name", sortable: true },
   { title: "Merek", key: "brand", sortable: true },
   { title: "Harga", key: "price", sortable: true },
-  { title: "Stok", key: "stock", sortable: true },
+  ...(settingsStore.isStockHidden ? [] : [{ title: "Stok", key: "stock", sortable: true }]),
   { title: "Status", key: "actions", sortable: false, width: 100 },
-];
+]);
 
 // Helper functions
 const isInCart = (itemId) => {

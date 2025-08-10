@@ -38,7 +38,7 @@
         <v-row>
           <v-col cols="12" md="6">
             <v-text-field
-              v-model="settings.minSaleAmount"
+              v-model="settingsStore.settings.minSaleAmount"
               label="Minimal Penjualan (Rp)"
               type="number"
               variant="outlined"
@@ -52,7 +52,7 @@
 
           <v-col cols="12" md="6">
             <v-text-field
-              v-model="settings.lowStockThreshold"
+              v-model="settingsStore.settings.lowStockThreshold"
               label="Batas Stok Menipis"
               type="number"
               variant="outlined"
@@ -60,6 +60,20 @@
             />
             <div class="text-caption text-medium-emphasis">
               Stok di bawah angka ini akan ditandai sebagai menipis
+            </div>
+          </v-col>
+        </v-row>
+
+        <v-row>
+          <v-col cols="12" md="6">
+            <v-switch
+              v-model="settingsStore.settings.hideStock"
+              color="warning"
+              label="Sembunyikan Informasi Stok"
+              :prepend-icon="settingsStore.settings.hideStock ? 'mdi-eye-off' : 'mdi-eye'"
+            />
+            <div class="text-caption text-medium-emphasis">
+              Menyembunyikan semua informasi stok produk di seluruh aplikasi
             </div>
           </v-col>
         </v-row>
@@ -374,6 +388,7 @@ import { ref, computed, onMounted } from "vue";
 import { useThemeStore } from "@/stores/theme";
 import { useDataStore } from "@/stores/data";
 import { useNotificationStore } from "@/stores/notifications";
+import { useSettingsStore } from "@/stores/settings";
 import { supabase } from "@/utils/supabase";
 import { validateInput, formatCurrency } from "@/utils/helpers";
 import { createCategory, createItem } from "@/utils/supabase";
@@ -382,6 +397,7 @@ import * as XLSX from "xlsx";
 const themeStore = useThemeStore();
 const dataStore = useDataStore();
 const notificationStore = useNotificationStore();
+const settingsStore = useSettingsStore();
 
 const savingSettings = ref(false);
 const exporting = ref(false);
@@ -413,6 +429,7 @@ const previewHeaders = [
 const settings = ref({
   minSaleAmount: 1000,
   lowStockThreshold: 5,
+  hideStock: false,
 });
 
 const systemInfo = computed(() => ({
@@ -424,12 +441,21 @@ const systemInfo = computed(() => ({
 const saveSettings = () => {
   savingSettings.value = true;
 
-  // Save to localStorage for now (in real app, save to database)
-  localStorage.setItem("appSettings", JSON.stringify(settings.value));
+  const success = settingsStore.saveSettings();
 
   setTimeout(() => {
     savingSettings.value = false;
-    alert("Pengaturan berhasil disimpan");
+    if (success) {
+      notificationStore.addNotification({
+        type: "success",
+        message: "Pengaturan berhasil disimpan",
+      });
+    } else {
+      notificationStore.addNotification({
+        type: "error",
+        message: "Gagal menyimpan pengaturan",
+      });
+    }
   }, 1000);
 };
 
@@ -895,7 +921,7 @@ const loadSettings = () => {
 };
 
 onMounted(async () => {
-  loadSettings();
+  // No need to load settings manually as settingsStore handles it automatically
 
   try {
     await Promise.all([

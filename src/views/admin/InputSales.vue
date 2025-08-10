@@ -929,6 +929,7 @@ import { ref, computed, onMounted, watch, nextTick } from "vue";
 import { useAuthStore } from "@/stores/auth";
 import { useDataStore } from "@/stores/data";
 import { useNotificationStore } from "@/stores/notifications";
+import { useSettingsStore } from "@/stores/settings";
 import {
   createSale,
   updateItemStock,
@@ -940,6 +941,7 @@ import Nota from "@/components/Nota.vue";
 const authStore = useAuthStore();
 const dataStore = useDataStore();
 const notificationStore = useNotificationStore();
+const settingsStore = useSettingsStore();
 
 const inputMode = ref("manual");
 const saving = ref(false);

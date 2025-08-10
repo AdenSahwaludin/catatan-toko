@@ -52,6 +52,7 @@
 
           <v-col cols="12" sm="6" md="3">
             <v-switch
+              v-if="!settingsStore.isStockHidden"
               v-model="showLowStock"
               label="Stok menipis"
               color="warning"
@@ -81,6 +82,7 @@
 
         <template #item.stock="{ item }">
           <v-chip
+            v-if="!settingsStore.isStockHidden"
             :color="
               item.stock < 5 ? 'error' : item.stock < 10 ? 'warning' : 'success'
             "
@@ -216,6 +218,7 @@
 
               <v-col cols="12">
                 <v-text-field
+                  v-if="!settingsStore.isStockHidden"
                   v-model="formData.stock"
                   label="Stok"
                   type="number"
@@ -260,10 +263,12 @@
 <script setup>
 import { ref, computed, onMounted, watch } from "vue";
 import { useDataStore } from "@/stores/data";
+import { useSettingsStore } from "@/stores/settings";
 import { supabase } from "@/utils/supabase";
 import { formatCurrency, validateInput } from "@/utils/helpers";
 
 const dataStore = useDataStore();
+const settingsStore = useSettingsStore();
 
 const loading = ref(false);
 const dialog = ref(false);
@@ -289,15 +294,15 @@ const formData = ref({
   stock: "",
 });
 
-const headers = [
+const headers = computed(() => [
   { title: "Nama", key: "name", sortable: true },
   { title: "Kategori", key: "categories.name", sortable: true },
   { title: "Merek", key: "brand", sortable: true },
   { title: "Model", key: "model", sortable: true },
   { title: "Harga", key: "price", sortable: true },
-  { title: "Stok", key: "stock", sortable: true },
+  ...(settingsStore.isStockHidden ? [] : [{ title: "Stok", key: "stock", sortable: true }]),
   { title: "Aksi", key: "actions", sortable: false, width: 120 },
-];
+]);
 
 const categoryOptions = computed(() => [
   { title: "Semua Kategori", value: "" },
