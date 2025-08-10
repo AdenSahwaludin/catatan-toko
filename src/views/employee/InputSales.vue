@@ -728,7 +728,7 @@
             Total: {{ formatCurrency(lastSaleAmount) }}
           </div>
         </v-card-text>
-        <v-card-actions class="px-6 pb-6">
+        <v-card-actions class="px-6 pb-6 d-flex flex-wrap ga-3">
           <v-btn
             color="secondary"
             variant="outlined"
@@ -737,7 +737,18 @@
           >
             Tutup
           </v-btn>
-          <v-btn color="primary" @click="printReceipt" class="flex-1 ml-3">
+
+          <v-btn
+            color="info"
+            variant="outlined"
+            @click="openPayment()"
+            class="flex-1"
+          >
+            <v-icon class="mr-2">mdi-cash</v-icon>
+            Hitung Kembalian
+          </v-btn>
+
+          <v-btn color="primary" @click="printReceipt" class="flex-1">
             <v-icon class="mr-2">mdi-printer</v-icon>
             Cetak Struk
           </v-btn>
@@ -858,22 +869,10 @@
                     <span>{{ item.type || "Custom Item" }}</span>
                   </template>
                   <template v-else>
-                    <div>ID: {{ item.id }}</div>
                     <div>
                       {{ item.brand || "No Brand"
                       }}<span v-if="item.model"> - {{ item.model }}</span>
                     </div>
-                    <!-- Category info -->
-                    <template v-if="item.category_id">
-                      <div>
-                        Kategori:
-                        {{
-                          dataStore.categories.find(
-                            (cat) => cat.id === item.category_id
-                          )?.name || "Uncategorized"
-                        }}
-                      </div>
-                    </template>
                   </template>
                 </div>
                 <div
@@ -903,6 +902,31 @@
               <span>TOTAL:</span>
               <span>{{ formatCurrency(lastSaleAmount) }}</span>
             </div>
+
+            <template v-if="lastSalePaid !== null">
+              <div
+                style="
+                  display: flex;
+                  justify-content: space-between;
+                  font-weight: 600;
+                  margin-top: 6px;
+                "
+              >
+                <span>DIBAYAR:</span>
+                <span>{{ formatCurrency(lastSalePaid) }}</span>
+              </div>
+              <div
+                style="
+                  display: flex;
+                  justify-content: space-between;
+                  font-weight: 800;
+                  margin-top: 6px;
+                "
+              >
+                <span>KEMBALIAN:</span>
+                <span>{{ formatCurrency(lastSaleChange) }}</span>
+              </div>
+            </template>
           </div>
 
           <!-- Footer -->
@@ -1019,6 +1043,81 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <!-- Payment / Change Dialog -->
+    <v-dialog v-model="paymentDialog" max-width="420px">
+      <v-card>
+        <v-card-title class="d-flex align-center">
+          <v-icon class="mr-2">mdi-cash</v-icon>
+          Hitung Kembalian
+        </v-card-title>
+        <v-divider />
+
+        <v-card-text class="pt-4">
+          <v-card color="grey-lighten-4" variant="tonal" class="mb-4">
+            <v-card-text class="py-2">
+              <div class="d-flex justify-space-between">
+                <span>Total Belanja</span>
+                <strong>{{ formatCurrency(lastSaleAmount) }}</strong>
+              </div>
+            </v-card-text>
+          </v-card>
+
+          <v-text-field
+            v-model="amountReceived"
+            label="Uang Diterima"
+            type="number"
+            prefix="Rp"
+            variant="outlined"
+            autofocus
+          />
+
+          <div class="mt-2">
+            <v-chip class="mr-2" color="primary" variant="tonal">
+              Dibayar: {{ formatCurrency(Number(amountReceived || 0)) }}
+            </v-chip>
+
+            <v-chip v-if="paymentEnough" color="success" variant="flat">
+              Kembalian: {{ formatCurrency(changePreview) }}
+            </v-chip>
+
+            <v-chip v-else color="error" variant="flat">
+              Kurang: {{ formatCurrency(Math.abs(changePreview)) }}
+            </v-chip>
+          </div>
+        </v-card-text>
+
+        <v-card-actions class="px-6 pb-6 d-flex flex-wrap ga-3">
+          <v-btn
+            color="secondary"
+            variant="outlined"
+            class="flex-1"
+            @click="paymentDialog = false"
+          >
+            Batal
+          </v-btn>
+
+          <v-btn
+            :disabled="!paymentEnough"
+            color="primary"
+            class="flex-1"
+            @click="confirmPayment(false)"
+          >
+            Selesai tanpa cetak
+          </v-btn>
+
+          <v-btn
+            :disabled="!paymentEnough"
+            color="success"
+            class="flex-1"
+            @click="confirmPayment(true)"
+          >
+            <v-icon class="mr-2">mdi-printer</v-icon>
+            Cetak Struk
+          </v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
   </div>
 </template>
 
@@ -1027,7 +1126,7 @@ import { ref, computed, onMounted, watch, nextTick } from "vue";
 import { useAuthStore } from "@/stores/auth";
 import { useDataStore } from "@/stores/data";
 import { useNotificationStore } from "@/stores/notifications";
-import { createSale, updateItemStock } from "@/utils/supabase";
+import { createSale, updateItemStock, updateSalePayment } from "@/utils/supabase";
 import { formatCurrency, validateInput } from "@/utils/helpers";
 
 const authStore = useAuthStore();
@@ -1328,6 +1427,9 @@ const removeFromCart = (index) => {
   cart.value.splice(index, 1);
 };
 
+const lastSaleId = ref(null);
+const lastSaleDetails = ref(null);
+
 const submitManualSale = async () => {
   const { valid } = await manualForm.value.validate();
   if (!valid) return;
@@ -1340,15 +1442,22 @@ const submitManualSale = async () => {
       total: Number(manualAmount.value),
       details: {
         type: "manual",
-        notes: manualNotes.value || null,
+        notes: manualNotes.value,
       },
       created_at: new Date().toISOString(),
       edited_by_admin: false,
       edit_log: {},
       is_deleted: false,
+      // Kolom payment - akan diisi nanti saat payment dikonfirmasi
+      paid: null,
+      change: null,
+      payment_timestamp: null,
     };
 
-    await createSale(saleData);
+    console.log("Creating manual sale with data:", saleData);
+    const savedSale = await createSale(saleData);
+    console.log("Manual sale created successfully:", savedSale);
+    lastSaleId.value = savedSale.id;
 
     lastSaleAmount.value = Number(manualAmount.value);
     successDialog.value = true;
@@ -1432,11 +1541,17 @@ const submitItemsSale = async () => {
       edited_by_admin: false,
       edit_log: {},
       is_deleted: false,
+      // Kolom payment - akan diisi nanti saat payment dikonfirmasi
+      paid: null,
+      change: null,
+      payment_timestamp: null,
     };
 
-    console.log("Creating sale record...");
+    console.log("Creating sale record with data:", saleData);
     // Save the sale first
-    await createSale(saleData);
+    const savedSale = await createSale(saleData);
+    console.log("Sale created successfully:", savedSale);
+    lastSaleId.value = savedSale.id;
 
     console.log("Updating stock for items...");
     // Update stock for each item (skip custom items)
@@ -1456,9 +1571,13 @@ const submitItemsSale = async () => {
     lastSaleAmount.value = cartTotal.value;
     lastSaleCart.value = [...cart.value]; // Save cart data before clearing
     successDialog.value = true;
+    lastSalePaid.value = null;
+    lastSaleChange.value = null;
+    amountReceived.value = "";
 
-    // Reset cart
+    // Reset cart and sale ID
     cart.value = [];
+    // Don't reset lastSaleId yet, we need it for payment processing
 
     // Refresh items data to get updated stock
     await dataStore.fetchItems();
@@ -1497,6 +1616,7 @@ const submitItemsSale = async () => {
 
 const clearCart = () => {
   cart.value = [];
+  lastSaleId.value = null;
 };
 
 const refreshItems = async () => {
@@ -1650,6 +1770,85 @@ const addCustomItem = async () => {
 
   // Close dialog and reset form properly
   closeCustomItemDialog();
+};
+
+// Payment / Change
+const paymentDialog = ref(false);
+const amountReceived = ref("");
+const lastSalePaid = ref(null); // number | null
+const lastSaleChange = ref(null); // number | null
+
+const changePreview = computed(() => {
+  const paid = Number(amountReceived.value || 0);
+  const total = Number(lastSaleAmount.value || 0);
+  // bernilai positif = kembalian, negatif = kurang
+  return paid - total;
+});
+
+const paymentEnough = computed(() => changePreview.value >= 0);
+
+const openPayment = () => {
+  amountReceived.value = "";
+  paymentDialog.value = true;
+};
+
+const confirmPayment = async (shouldPrint) => {
+  const paid = Number(amountReceived.value);
+  const total = Number(lastSaleAmount.value);
+
+  if (isNaN(paid) || paid <= 0) return;
+  if (paid < total) return; // guarded by disabled button juga
+
+  lastSalePaid.value = paid;
+  lastSaleChange.value = paid - total;
+
+  console.log("Payment confirmed:", {
+    saleId: lastSaleId.value,
+    paid: lastSalePaid.value,
+    change: lastSaleChange.value,
+  });
+
+  // Save payment info to database if we have a sale ID
+  if (lastSaleId.value) {
+    try {
+      console.log("Calling updateSalePayment with:", {
+        saleId: lastSaleId.value,
+        paid: lastSalePaid.value,
+        change: lastSaleChange.value,
+      });
+      
+      const result = await updateSalePayment(lastSaleId.value, {
+        paid: lastSalePaid.value,
+        change: lastSaleChange.value,
+      });
+      
+      console.log("Payment info saved to database successfully:", result);
+    } catch (error) {
+      console.error("Error saving payment info:", error);
+      // Don't stop the process if payment info fails to save
+      alert("Warning: Gagal menyimpan info pembayaran ke database");
+    }
+    // Reset sale ID after payment is processed
+    lastSaleId.value = null;
+  } else {
+    console.warn("No sale ID found for payment update");
+  }
+
+  paymentDialog.value = false;
+  successDialog.value = false;
+
+  if (shouldPrint) {
+    // buka preview struk
+    receiptDialog.value = true;
+  } else {
+    // hanya selesai tanpa cetak
+    notificationStore.addNotification({
+      type: "success",
+      message: `Transaksi selesai. Kembalian: ${formatCurrency(
+        lastSaleChange.value
+      )}`,
+    });
+  }
 };
 
 onMounted(async () => {

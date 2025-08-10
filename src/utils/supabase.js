@@ -84,6 +84,13 @@ export const getSales = async (filters = {}) => {
     query = query.eq("is_deleted", false);
   }
 
+  // Filter berdasarkan status pembayaran jika diperlukan
+  if (filters.paymentStatus === "paid") {
+    query = query.not("paid", "is", null);
+  } else if (filters.paymentStatus === "unpaid") {
+    query = query.is("paid", null);
+  }
+
   const { data, error } = await query;
 
   if (error) throw error;
@@ -91,12 +98,19 @@ export const getSales = async (filters = {}) => {
 };
 
 export const createSale = async (saleData) => {
+  console.log("Creating sale with data:", saleData);
+  
   const { data, error } = await supabase
     .from("sales")
     .insert([saleData])
     .select();
 
-  if (error) throw error;
+  if (error) {
+    console.error("Error creating sale:", error);
+    throw error;
+  }
+  
+  console.log("Sale created successfully:", data[0]);
   return data[0];
 };
 
@@ -117,6 +131,33 @@ export const createItem = async (itemData) => {
     .select();
 
   if (error) throw error;
+  return data[0];
+};
+
+export const updateSalePayment = async (saleId, paymentData) => {
+  console.log("Updating payment for sale:", saleId, paymentData);
+  
+  // Update payment columns directly
+  const updateData = {
+    paid: paymentData.paid,
+    change: paymentData.change,
+    payment_timestamp: new Date().toISOString(),
+  };
+
+  console.log("Updating with data:", updateData);
+
+  const { data, error } = await supabase
+    .from("sales")
+    .update(updateData)
+    .eq("id", saleId)
+    .select();
+
+  if (error) {
+    console.error("Error updating sale payment:", error);
+    throw error;
+  }
+  
+  console.log("Payment update result:", data[0]);
   return data[0];
 };
 
