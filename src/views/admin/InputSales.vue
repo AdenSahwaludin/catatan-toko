@@ -973,7 +973,7 @@ import {
 } from "@/utils/supabase";
 import { formatCurrency, validateInput } from "@/utils/helpers";
 import Nota from "@/components/Nota.vue";
-import BarcodeScanner from "@/components/BarcodeScanner.vue";
+import BarcodeScanner from "@/components/BarcodeScanner2.vue";
 
 const authStore = useAuthStore();
 const dataStore = useDataStore();

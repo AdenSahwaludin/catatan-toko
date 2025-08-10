@@ -303,7 +303,7 @@ import { useDataStore } from "@/stores/data";
 import { useSettingsStore } from "@/stores/settings";
 import { supabase } from "@/utils/supabase";
 import { formatCurrency, validateInput } from "@/utils/helpers";
-import BarcodeScanner from "@/components/BarcodeScanner.vue";
+import BarcodeScanner from "@/components/BarcodeScanner2.vue";
 
 const dataStore = useDataStore();
 const settingsStore = useSettingsStore();
