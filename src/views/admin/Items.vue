@@ -296,10 +296,10 @@ const formData = ref({
 
 const headers = computed(() => [
   { title: "Nama", key: "name", sortable: true },
-  { title: "Kategori", key: "categories.name", sortable: true },
+  { title: "Harga", key: "price", sortable: true },
   { title: "Merek", key: "brand", sortable: true },
   { title: "Model", key: "model", sortable: true },
-  { title: "Harga", key: "price", sortable: true },
+  { title: "Kategori", key: "categories.name", sortable: true },
   ...(settingsStore.isStockHidden
     ? []
     : [{ title: "Stok", key: "stock", sortable: true }]),

@@ -93,9 +93,12 @@
 
     <!-- Items Grid/List -->
     <v-row>
-      <v-col cols="12" class="d-flex justify-space-between align-center mb-2">
-        <div class="d-flex align-center">
-          <v-chip color="info" variant="tonal" class="mr-2">
+      <v-col
+        cols="12"
+        class="d-flex justify-space-between align-center mb-2 flex-wrap gap-2"
+      >
+        <div class="d-flex align-center flex-wrap gap-2">
+          <v-chip color="info" variant="tonal">
             Total: {{ totalItems }} item
           </v-chip>
           <v-chip
@@ -107,7 +110,7 @@
           </v-chip>
         </div>
 
-        <div class="d-flex align-center">
+        <div class="d-flex align-center flex-wrap gap-2">
           <v-select
             v-model="itemsPerPage"
             :items="[12, 24, 48, 96]"
@@ -115,8 +118,17 @@
             density="compact"
             variant="outlined"
             hide-details
-            class="mr-3"
+            class="d-none d-sm-block"
             style="width: 120px"
+          />
+          <v-select
+            v-model="itemsPerPage"
+            :items="[12, 24, 48, 96]"
+            density="compact"
+            variant="outlined"
+            hide-details
+            class="d-block d-sm-none"
+            style="width: 80px"
           />
           <v-btn-toggle
             v-model="viewMode"
@@ -124,8 +136,8 @@
             variant="outlined"
             density="compact"
           >
-            <v-btn value="grid" icon="mdi-view-grid" />
-            <v-btn value="list" icon="mdi-view-list" />
+            <v-btn value="grid" icon="mdi-view-grid" size="small" />
+            <v-btn value="list" icon="mdi-view-list" size="small" />
           </v-btn-toggle>
         </div>
       </v-col>
@@ -176,8 +188,9 @@
 
     <!-- Grid View with Pagination -->
     <div v-else-if="viewMode === 'grid' && filteredCount > 0">
-      <v-row>
+      <v-row style="margin: auto">
         <v-col
+          :style="$vuetify.display.smAndDown ? 'padding: 8px 0px' : ''"
           v-for="item in paginatedItems"
           :key="item.id"
           cols="12"
@@ -185,7 +198,12 @@
           md="4"
           lg="3"
         >
-          <v-card class="h-100" elevation="2" hover>
+          <v-card
+            class="h-100"
+            elevation="2"
+            hover
+            style="display: flex; flex-direction: column"
+          >
             <v-card-text>
               <div class="d-flex align-center mb-2">
                 <v-avatar color="primary" size="32" class="mr-2">
@@ -256,9 +274,11 @@
           <v-pagination
             v-model="currentPage"
             :length="totalPages"
-            :total-visible="7"
+            :total-visible="$vuetify.display.smAndUp ? 7 : 5"
             color="primary"
             rounded="circle"
+            density="compact"
+            class="pagination-mobile"
           />
         </v-col>
       </v-row>
@@ -645,3 +665,60 @@ onMounted(async () => {
   }
 });
 </script>
+
+<style scoped>
+/* Prevent horizontal overflow */
+.v-container,
+.v-row,
+.v-col {
+  max-width: 100%;
+  overflow-x: hidden;
+}
+
+/* Responsive pagination */
+.pagination-mobile {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+/* Mobile responsive adjustments */
+@media (max-width: 600px) {
+  .pagination-mobile :deep(.v-pagination__item) {
+    min-width: 32px;
+    height: 32px;
+    font-size: 0.8rem;
+  }
+
+  .pagination-mobile :deep(.v-pagination__prev),
+  .pagination-mobile :deep(.v-pagination__next) {
+    min-width: 32px;
+    height: 32px;
+  }
+
+  /* Ensure cards don't overflow */
+  .v-card {
+    max-width: 100%;
+  }
+
+  /* Prevent text overflow in chips */
+  .v-chip {
+    max-width: 100%;
+    word-break: break-word;
+  }
+}
+
+/* Ensure data table doesn't overflow */
+.v-data-table {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+/* Fix for flex items wrapping properly */
+.flex-wrap {
+  flex-wrap: wrap !important;
+}
+
+.gap-2 {
+  gap: 8px;
+}
+</style>

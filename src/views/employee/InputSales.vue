@@ -277,6 +277,7 @@
                 md="3"
               >
                 <v-card
+                  style="height: 100%"
                   :ripple="true"
                   hover
                   :disabled="!settingsStore.isStockHidden && item.stock === 0"
@@ -310,9 +311,7 @@
                     </div>
 
                     <!-- Item name -->
-                    <div
-                      class="text-subtitle-2 font-weight-bold mb-1 text-truncate"
-                    >
+                    <div class="text-subtitle-2 font-weight-bold mb-1">
                       {{ item.name }}
                     </div>
 
@@ -992,9 +991,10 @@ const customItemForm = ref();
 
 const itemHeaders = computed(() => [
   { title: "Nama", key: "name", sortable: true },
-  { title: "Kategori", key: "categories.name", sortable: true },
-  { title: "Merek", key: "brand", sortable: true },
   { title: "Harga", key: "price", sortable: true },
+  { title: "Merek", key: "brand", sortable: true },
+  { title: "Model", key: "model", sortable: true },
+  { title: "Kategori", key: "categories.name", sortable: true },
   ...(settingsStore.isStockHidden
     ? []
     : [{ title: "Stok", key: "stock", sortable: true }]),

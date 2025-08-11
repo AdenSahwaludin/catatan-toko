@@ -981,9 +981,10 @@ const customItemForm = ref();
 
 const itemHeaders = [
   { title: "Nama", key: "name", sortable: true },
-  { title: "Kategori", key: "categories.name", sortable: true },
-  { title: "Merek", key: "brand", sortable: true },
   { title: "Harga", key: "price", sortable: true },
+  { title: "Merek", key: "brand", sortable: true },
+  { title: "Model", key: "model", sortable: true },
+  { title: "Kategori", key: "categories.name", sortable: true },
   { title: "Stok", key: "stock", sortable: true },
   { title: "Status", key: "actions", sortable: false, width: 100 },
 ];
