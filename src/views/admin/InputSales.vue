@@ -94,14 +94,46 @@
             <v-col cols="12" md="4">
               <v-text-field
                 v-model="itemSearch"
-                label="Cari barang..."
-                placeholder="Contoh: philips 5 watt atau lampu 5"
+                label="Cari barang atau barcode..."
+                placeholder="Ketik nama barang atau scan/ketik barcode"
                 prepend-inner-icon="mdi-magnify"
-                hint="Ketik beberapa kata kunci untuk pencarian yang lebih akurat"
+                hint="Ketik kata kunci atau scan barcode untuk pencarian cepat"
                 persistent-hint
                 variant="outlined"
                 density="compact"
                 clearable
+              >
+                <template #append-inner>
+                  <v-btn
+                    icon="mdi-qrcode-scan"
+                    variant="text"
+                    size="small"
+                    @click="openBarcodeScanner"
+                    :disabled="loadingItems"
+                  />
+                </template>
+              </v-text-field>
+            </v-col>
+            <v-col cols="12" md="2">
+              <v-btn
+                color="primary"
+                variant="outlined"
+                prepend-icon="mdi-qrcode-scan"
+                @click="openBarcodeScanner"
+                :disabled="loadingItems"
+                block
+                class="d-none d-md-flex"
+              >
+                Scan
+              </v-btn>
+              <v-btn
+                color="primary"
+                variant="outlined"
+                icon="mdi-qrcode-scan"
+                @click="openBarcodeScanner"
+                :disabled="loadingItems"
+                block
+                class="d-flex d-md-none"
               />
             </v-col>
             <v-col cols="12" md="3">
@@ -116,6 +148,7 @@
             </v-col>
             <v-col cols="12" md="2">
               <v-switch
+                v-if="!settingsStore.isStockHidden"
                 v-model="showAvailableOnly"
                 label="Stok tersedia"
                 color="primary"
@@ -131,7 +164,7 @@
                 hide-details
               />
             </v-col>
-            <v-col cols="12" md="2">
+            <v-col cols="12" md="1">
               <v-btn
                 @click="refreshItems"
                 :loading="loadingItems"
@@ -921,6 +954,9 @@
         </v-card-actions>
       </v-card>
     </v-dialog>
+
+    <!-- Barcode Scanner -->
+    <BarcodeScanner v-model="barcodeScanner" @detected="onBarcodeDetected" />
   </div>
 </template>
 
@@ -937,6 +973,7 @@ import {
 } from "@/utils/supabase";
 import { formatCurrency, validateInput } from "@/utils/helpers";
 import Nota from "@/components/Nota.vue";
+import BarcodeScanner from "@/components/BarcodeScanner2.vue";
 
 const authStore = useAuthStore();
 const dataStore = useDataStore();
@@ -949,6 +986,7 @@ const loadingItems = ref(false);
 const successDialog = ref(false);
 const receiptDialog = ref(false);
 const customItemDialog = ref(false);
+const barcodeScanner = ref(false);
 
 // Pagination variables
 const currentPage = ref(1);
@@ -1039,11 +1077,17 @@ const filteredItems = computed(() => {
       .filter((keyword) => keyword.length > 0);
 
     items = items.filter((item) => {
+      // First check exact barcode match (for fast barcode lookup)
+      if (item.barcode && item.barcode === itemSearch.value) {
+        return true;
+      }
+
       // Create searchable text from all relevant fields
       const searchableText = [
         item.name,
         item.brand,
         item.model || "",
+        item.barcode || "",
         getCategoryName(item.category_id),
       ]
         .join(" ")
@@ -1647,6 +1691,37 @@ const confirmPayment = async (shouldPrint) => {
       message: `Transaksi selesai. Kembalian: ${formatCurrency(
         lastSaleChange.value
       )}`,
+    });
+  }
+};
+
+// Barcode scanner functions
+const openBarcodeScanner = () => {
+  barcodeScanner.value = true;
+};
+
+const onBarcodeDetected = async (barcode) => {
+  console.log("Barcode detected:", barcode);
+
+  // Search for item by barcode
+  const item = dataStore.items.find((item) => item.barcode === barcode);
+
+  if (item) {
+    // Clear search and add item to cart or show in results
+    itemSearch.value = "";
+    handleItemClick(item);
+
+    notificationStore.addNotification({
+      type: "success",
+      message: `Barang ditemukan: ${item.name}`,
+    });
+  } else {
+    // Set search to barcode for manual search
+    itemSearch.value = barcode;
+
+    notificationStore.addNotification({
+      type: "warning",
+      message: `Barcode ${barcode} tidak ditemukan di database`,
     });
   }
 };
