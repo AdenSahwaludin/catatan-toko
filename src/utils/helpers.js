@@ -29,6 +29,13 @@ export const formatDate = (date) => {
   });
 };
 
+export const formatTime = (date) => {
+  return new Date(date).toLocaleTimeString("id-ID", {
+    hour: "2-digit",
+    minute: "2-digit",
+  });
+};
+
 export const formatDateTime = (date) => {
   return new Date(date).toLocaleString("id-ID", {
     year: "numeric",

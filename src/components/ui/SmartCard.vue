@@ -11,15 +11,9 @@
     <!-- Header slot -->
     <template v-if="title || icon || $slots.header">
       <v-card-title :class="titleClasses">
-        <div
-          class="smart-card-header"
-          style="display: flex; align-items: center; justify-content: center"
-        >
+        <div class="smart-card-header">
           <!-- Left section with icon and title -->
-          <div
-            class="smart-card-header__main"
-            style="display: flex; align-items: center; justify-content: center"
-          >
+          <div class="smart-card-header__main">
             <v-icon
               v-if="icon"
               :size="iconSize"
@@ -256,10 +250,13 @@ const handleClick = (event) => {
   }
 }
 
-/* When many actions are present */
-.smart-card-header__actions:has(> *:nth-child(4)) {
+/* When many actions are present - fallback for :has() selector */
+.smart-card-header__actions {
   flex-wrap: wrap;
-  max-width: 200px;
+}
+
+.smart-card-header__actions > *:nth-child(4) ~ * {
+  flex-basis: 100%;
 }
 
 /* Compact mode adjustments */
