@@ -1,495 +1,475 @@
 <template>
   <div>
-    <v-row class="mb-4">
-      <v-col cols="12" md="6">
-        <h2 class="text-h5 font-weight-bold">Manajemen Penjualan</h2>
-      </v-col>
-    </v-row>
+    <!-- Header Card -->
+    <SmartCard
+      title="Manajemen Penjualan"
+      icon="mdi-cash-register"
+      :badge="filteredSales.length"
+      badge-color="success"
+      class="mb-4"
+    >
+      <template #subtitle>
+        Total penjualan: {{ formatCurrency(totalSales) }}
+      </template>
+      <template #actions>
+        <v-btn
+          color="primary"
+          prepend-icon="mdi-plus"
+          variant="tonal"
+          @click="$router.push('/admin/input-sales')"
+          class="me-2"
+        >
+          Input Penjualan
+        </v-btn>
+        <v-btn
+          color="info"
+          prepend-icon="mdi-file-excel"
+          variant="tonal"
+          @click="exportData"
+          :loading="exporting"
+        >
+          Export
+        </v-btn>
+      </template>
+    </SmartCard>
 
-    <!-- Filters -->
-    <v-card class="mb-4">
-      <v-card-text>
-        <v-row>
-          <v-col cols="12" sm="6" md="3">
-            <v-text-field
-              v-model="dateFrom"
-              label="Dari Tanggal"
-              type="date"
-              variant="outlined"
-              density="compact"
-            />
-          </v-col>
-
-          <v-col cols="12" sm="6" md="3">
-            <v-text-field
-              v-model="dateTo"
-              label="Sampai Tanggal"
-              type="date"
-              variant="outlined"
-              density="compact"
-            />
-          </v-col>
-
-          <v-col cols="12" sm="6" md="3">
-            <v-select
-              v-model="selectedEmployee"
-              :items="employeeOptions"
-              label="Karyawan"
-              variant="outlined"
-              density="compact"
-              clearable
-            />
-          </v-col>
-
-          <v-col cols="12" sm="6" md="3">
-            <v-switch
-              v-model="showDeleted"
-              label="Tampilkan yang dihapus"
-              color="warning"
-            />
-          </v-col>
-        </v-row>
-      </v-card-text>
-    </v-card>
-
-    <!-- Data Table -->
-    <v-card>
-      <v-data-table
-        :headers="headers"
-        :items="filteredSales"
-        :loading="loading"
-        item-value="id"
-      >
-        <template #item.users.email="{ item }">
-          <div class="d-flex align-center">
-            <v-avatar size="24" class="mr-2">
-              <v-icon size="16">mdi-account</v-icon>
-            </v-avatar>
-            {{ item.users?.email }}
+    <!-- Sales Data Table -->
+    <SmartDataTable
+      :items="filteredSales"
+      :headers="headers"
+      :loading="loading"
+      :search-value="search"
+      search-label="Cari penjualan..."
+      search-placeholder="ID, employee, atau total"
+      :filters="filters"
+      :filter-options="filterOptions"
+      :default-actions="tableActions"
+      :items-per-page="15"
+      empty-title="Belum Ada Data Penjualan"
+      empty-text="Data penjualan akan tampil di sini"
+      :empty-action="{
+        text: 'Input Penjualan',
+        icon: 'mdi-plus',
+        handler: () => $router.push('/admin/input-sales'),
+      }"
+      @update:search="search = $event"
+      @update:filters="filters = $event"
+    >
+      <!-- Custom item slots -->
+      <template #item.employee_email="{ item }">
+        <div class="d-flex align-center">
+          <v-avatar color="info" size="32" class="mr-3">
+            <v-icon size="16">mdi-account</v-icon>
+          </v-avatar>
+          <div>
+            <div class="font-weight-medium">
+              {{ getEmployeeName(item.employee_id) }}
+            </div>
+            <div class="text-caption text-medium-emphasis">
+              {{ item.employee_email }}
+            </div>
           </div>
-        </template>
+        </div>
+      </template>
 
-        <template #item.total="{ item }">
-          <span :class="{ 'text-error': hasBeenEdited(item) }">
-            {{ formatCurrency(item.total) }}
-          </span>
-        </template>
+      <template #item.total="{ item }">
+        <v-chip color="success" variant="tonal" size="small">
+          {{ formatCurrency(item.total) }}
+        </v-chip>
+      </template>
 
-        <template #item.created_at="{ item }">
-          {{ formatDateTime(item.created_at) }}
-        </template>
-
-        <template #item.status="{ item }">
-          <div class="d-flex flex-column gap-1">
-            <v-chip
-              v-if="item.edited_by_admin"
-              color="warning"
-              size="small"
-              variant="tonal"
-            >
-              Diedit Admin
-            </v-chip>
-            <v-chip
-              v-if="item.is_deleted"
-              color="error"
-              size="small"
-              variant="tonal"
-            >
-              Dihapus
-            </v-chip>
-            <v-chip
-              v-if="hasEditHistory(item)"
-              color="info"
-              size="small"
-              variant="tonal"
-              @click="showEditHistory(item)"
-              class="cursor-pointer"
-            >
-              Lihat Histori
-            </v-chip>
+      <template #item.created_at="{ item }">
+        <div>
+          <div>{{ formatDate(item.created_at) }}</div>
+          <div class="text-caption text-medium-emphasis">
+            {{ formatTime(item.created_at) }}
           </div>
-        </template>
+        </div>
+      </template>
 
-        <template #item.actions="{ item }">
-          <v-btn
-            icon="mdi-pencil"
-            size="small"
-            variant="text"
-            @click="openEditDialog(item)"
-            :disabled="item.is_deleted"
-          />
-          <v-btn
-            icon="mdi-delete"
-            size="small"
-            variant="text"
-            color="error"
-            @click="confirmDelete(item)"
-            :disabled="item.is_deleted"
-          />
-          <v-btn
-            icon="mdi-printer"
-            size="small"
-            variant="text"
-            color="primary"
-            @click="printReceipt(item)"
-          />
-          <v-btn
-            icon="mdi-eye"
-            size="small"
-            variant="text"
-            @click="viewDetails(item)"
-          />
-        </template>
-      </v-data-table>
-    </v-card>
+      <template #item.details="{ item }">
+        <v-tooltip>
+          <template #activator="{ props }">
+            <v-chip
+              v-bind="props"
+              color="primary"
+              variant="tonal"
+              size="small"
+              @click="showDetails(item)"
+              style="cursor: pointer"
+            >
+              {{ item.details ? item.details.length : 0 }} item
+            </v-chip>
+          </template>
+          <span>Klik untuk lihat detail</span>
+        </v-tooltip>
+      </template>
+
+      <template #item.edit_status="{ item }">
+        <v-chip
+          :color="item.edited_by_admin ? 'warning' : 'success'"
+          variant="tonal"
+          size="small"
+        >
+          {{ item.edited_by_admin ? "Diedit Admin" : "Original" }}
+        </v-chip>
+      </template>
+    </SmartDataTable>
+
+    <!-- Detail Dialog -->
+    <v-dialog v-model="detailDialog" max-width="600px">
+      <v-card v-if="selectedSale">
+        <v-card-title class="d-flex align-center">
+          <v-icon class="mr-2">mdi-receipt</v-icon>
+          Detail Penjualan #{{ selectedSale.id }}
+        </v-card-title>
+
+        <v-card-text>
+          <v-row>
+            <v-col cols="12" md="6">
+              <v-list-item>
+                <v-list-item-title>Employee</v-list-item-title>
+                <v-list-item-subtitle>{{
+                  getEmployeeName(selectedSale.employee_id)
+                }}</v-list-item-subtitle>
+              </v-list-item>
+            </v-col>
+            <v-col cols="12" md="6">
+              <v-list-item>
+                <v-list-item-title>Total</v-list-item-title>
+                <v-list-item-subtitle>{{
+                  formatCurrency(selectedSale.total)
+                }}</v-list-item-subtitle>
+              </v-list-item>
+            </v-col>
+            <v-col cols="12" md="6">
+              <v-list-item>
+                <v-list-item-title>Tanggal</v-list-item-title>
+                <v-list-item-subtitle>{{
+                  formatDateTime(selectedSale.created_at)
+                }}</v-list-item-subtitle>
+              </v-list-item>
+            </v-col>
+            <v-col cols="12" md="6">
+              <v-list-item>
+                <v-list-item-title>Status</v-list-item-title>
+                <v-list-item-subtitle>
+                  <v-chip
+                    :color="
+                      selectedSale.edited_by_admin ? 'warning' : 'success'
+                    "
+                    size="small"
+                    variant="tonal"
+                  >
+                    {{
+                      selectedSale.edited_by_admin ? "Diedit Admin" : "Original"
+                    }}
+                  </v-chip>
+                </v-list-item-subtitle>
+              </v-list-item>
+            </v-col>
+          </v-row>
+
+          <v-divider class="my-4" />
+
+          <h3 class="mb-3">Item yang Dijual</h3>
+          <v-table v-if="selectedSale.details && selectedSale.details.length">
+            <thead>
+              <tr>
+                <th>Nama Barang</th>
+                <th>Qty</th>
+                <th>Harga</th>
+                <th>Subtotal</th>
+              </tr>
+            </thead>
+            <tbody>
+              <tr v-for="detail in selectedSale.details" :key="detail.name">
+                <td>{{ detail.name }}</td>
+                <td>{{ detail.quantity }}</td>
+                <td>{{ formatCurrency(detail.price) }}</td>
+                <td>{{ formatCurrency(detail.quantity * detail.price) }}</td>
+              </tr>
+            </tbody>
+          </v-table>
+
+          <!-- Edit Log -->
+          <div
+            v-if="selectedSale.edit_log && selectedSale.edit_log.length"
+            class="mt-4"
+          >
+            <v-divider class="mb-3" />
+            <h3 class="mb-3">Riwayat Perubahan</h3>
+            <v-timeline density="compact" align="start">
+              <v-timeline-item
+                v-for="(log, index) in selectedSale.edit_log"
+                :key="index"
+                dot-color="warning"
+                size="small"
+              >
+                <div>
+                  <div class="text-body-2 font-weight-medium">
+                    {{ log.action }}
+                  </div>
+                  <div class="text-caption text-medium-emphasis">
+                    {{ formatDateTime(log.timestamp) }} - {{ log.admin_email }}
+                  </div>
+                  <div v-if="log.changes" class="text-caption mt-1">
+                    {{ log.changes }}
+                  </div>
+                </div>
+              </v-timeline-item>
+            </v-timeline>
+          </div>
+        </v-card-text>
+
+        <v-card-actions>
+          <v-spacer />
+          <v-btn @click="detailDialog = false">Tutup</v-btn>
+        </v-card-actions>
+      </v-card>
+    </v-dialog>
 
     <!-- Edit Dialog -->
     <v-dialog v-model="editDialog" max-width="500px" persistent>
-      <v-card>
-        <v-card-title>Edit Penjualan</v-card-title>
+      <v-card v-if="editingSale">
+        <v-card-title>Edit Total Penjualan</v-card-title>
 
         <v-card-text>
-          <v-form ref="editForm" @submit.prevent="saveSaleEdit">
+          <v-form ref="editForm" @submit.prevent="saveSale">
             <v-text-field
-              v-model="editData.total"
+              v-model.number="editForm.total"
               label="Total Penjualan"
               type="number"
               variant="outlined"
               prefix="Rp"
-              :rules="[validateInput.required, validateInput.minAmount]"
+              :rules="[validateInput.required, validateInput.positiveNumber]"
               required
             />
-
             <v-textarea
-              v-model="editData.adminNotes"
-              label="Catatan Admin"
+              v-model="editForm.reason"
+              label="Alasan Perubahan"
               variant="outlined"
               rows="3"
+              :rules="[validateInput.required]"
+              required
             />
           </v-form>
         </v-card-text>
 
         <v-card-actions>
           <v-spacer />
-          <v-btn variant="text" @click="editDialog = false">Batal</v-btn>
-          <v-btn color="primary" :loading="saving" @click="saveSaleEdit">
+          <v-btn @click="closeEditDialog">Batal</v-btn>
+          <v-btn color="primary" @click="saveSale" :loading="saving">
             Simpan
           </v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
 
-    <!-- Delete Confirmation -->
+    <!-- Delete Dialog -->
     <v-dialog v-model="deleteDialog" max-width="400px">
       <v-card>
-        <v-card-title>Hapus Penjualan</v-card-title>
+        <v-card-title>Konfirmasi Hapus</v-card-title>
         <v-card-text>
-          Yakin ingin menghapus penjualan sebesar
-          {{ formatCurrency(saleToDelete?.total || 0) }}?
+          <p>Yakin ingin menghapus penjualan ini?</p>
+          <v-alert type="warning" variant="tonal" class="mt-3">
+            Data yang dihapus tidak dapat dikembalikan.
+          </v-alert>
         </v-card-text>
         <v-card-actions>
           <v-spacer />
-          <v-btn variant="text" @click="deleteDialog = false">Batal</v-btn>
-          <v-btn color="error" :loading="deleting" @click="deleteSale">
+          <v-btn @click="deleteDialog = false">Batal</v-btn>
+          <v-btn color="error" @click="deleteSale" :loading="deleting">
             Hapus
           </v-btn>
         </v-card-actions>
       </v-card>
     </v-dialog>
-
-    <!-- Details Dialog -->
-    <v-dialog v-model="detailsDialog" max-width="600px">
-      <v-card v-if="selectedSale">
-        <v-card-title>Detail Penjualan</v-card-title>
-
-        <v-card-text>
-          <v-row>
-            <v-col cols="12" sm="6">
-              <v-list density="compact">
-                <v-list-item>
-                  <v-list-item-title>Total</v-list-item-title>
-                  <v-list-item-subtitle>{{
-                    formatCurrency(selectedSale.total)
-                  }}</v-list-item-subtitle>
-                </v-list-item>
-                <v-list-item>
-                  <v-list-item-title>Karyawan</v-list-item-title>
-                  <v-list-item-subtitle>{{
-                    selectedSale.users?.email
-                  }}</v-list-item-subtitle>
-                </v-list-item>
-                <v-list-item>
-                  <v-list-item-title>Tanggal</v-list-item-title>
-                  <v-list-item-subtitle>{{
-                    formatDateTime(selectedSale.created_at)
-                  }}</v-list-item-subtitle>
-                </v-list-item>
-                <!-- Payment Info -->
-                <v-list-item
-                  v-if="
-                    selectedSale.paid !== null &&
-                    selectedSale.paid !== undefined
-                  "
-                >
-                  <v-list-item-title>Dibayar</v-list-item-title>
-                  <v-list-item-subtitle>{{
-                    formatCurrency(selectedSale.paid)
-                  }}</v-list-item-subtitle>
-                </v-list-item>
-                <v-list-item
-                  v-if="
-                    selectedSale.change !== null &&
-                    selectedSale.change !== undefined
-                  "
-                >
-                  <v-list-item-title>Kembalian</v-list-item-title>
-                  <v-list-item-subtitle>{{
-                    formatCurrency(selectedSale.change)
-                  }}</v-list-item-subtitle>
-                </v-list-item>
-              </v-list>
-            </v-col>
-
-            <v-col cols="12" sm="6">
-              <div v-if="selectedSale.details?.type === 'items'">
-                <h4 class="mb-2">Barang yang Dijual:</h4>
-                <v-list density="compact">
-                  <v-list-item
-                    v-for="item in selectedSale.details.items"
-                    :key="item.id"
-                  >
-                    <v-list-item-title>{{ item.name }}</v-list-item-title>
-                    <v-list-item-subtitle>
-                      {{ formatCurrency(item.price) }} x {{ item.quantity }}
-                    </v-list-item-subtitle>
-                  </v-list-item>
-                </v-list>
-              </div>
-
-              <div v-else-if="selectedSale.details?.notes">
-                <h4 class="mb-2">Catatan:</h4>
-                <p>{{ selectedSale.details.notes }}</p>
-              </div>
-            </v-col>
-          </v-row>
-        </v-card-text>
-
-        <v-card-actions>
-          <v-spacer />
-          <v-btn @click="detailsDialog = false">Tutup</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
-
-    <!-- Edit History Dialog -->
-    <v-dialog v-model="historyDialog" max-width="600px">
-      <v-card v-if="selectedSaleHistory">
-        <v-card-title>Histori Perubahan</v-card-title>
-
-        <v-card-text>
-          <v-timeline density="compact">
-            <v-timeline-item
-              v-for="(log, timestamp) in selectedSaleHistory.edit_log"
-              :key="timestamp"
-              size="small"
-            >
-              <template #icon>
-                <v-icon size="16">mdi-pencil</v-icon>
-              </template>
-
-              <div class="mb-2">
-                <div class="text-caption text-medium-emphasis">
-                  {{ formatDateTime(timestamp) }}
-                </div>
-
-                <div v-if="log.action === 'deleted'">
-                  <span class="text-error">Dihapus</span>
-                  oleh {{ log.is_admin ? "Admin" : "Karyawan" }}
-                </div>
-
-                <div v-else>
-                  Total diubah dari
-                  <span class="text-error">{{
-                    formatCurrency(log.previous_total)
-                  }}</span>
-                  menjadi
-                  <span class="text-success">{{
-                    formatCurrency(log.new_total)
-                  }}</span>
-                  oleh {{ log.is_admin ? "Admin" : "Karyawan" }}
-                </div>
-              </div>
-            </v-timeline-item>
-          </v-timeline>
-        </v-card-text>
-
-        <v-card-actions>
-          <v-spacer />
-          <v-btn @click="historyDialog = false">Tutup</v-btn>
-        </v-card-actions>
-      </v-card>
-    </v-dialog>
-
-    <!-- Receipt Modal using Nota Component -->
-    <Nota v-model="receiptDialog" :sale-data="receiptSaleData" />
   </div>
 </template>
 
 <script setup>
 import { ref, computed, onMounted } from "vue";
-import { useAuthStore } from "@/stores/auth";
 import { useDataStore } from "@/stores/data";
-import { updateSale, deleteSale as deleteSaleAPI } from "@/utils/supabase";
-import { formatCurrency, formatDateTime, validateInput } from "@/utils/helpers";
-import Nota from "@/components/Nota.vue";
+import { useAuthStore } from "@/stores/auth";
+import { supabase } from "@/utils/supabase";
+import {
+  formatCurrency,
+  formatDate,
+  formatTime,
+  formatDateTime,
+  validateInput,
+} from "@/utils/helpers";
+import SmartCard from "@/components/ui/SmartCard.vue";
+import SmartDataTable from "@/components/ui/SmartDataTable.vue";
 
-const authStore = useAuthStore();
 const dataStore = useDataStore();
+const authStore = useAuthStore();
 
 const loading = ref(false);
-const editDialog = ref(false);
-const deleteDialog = ref(false);
-const detailsDialog = ref(false);
-const historyDialog = ref(false);
-const receiptDialog = ref(false);
+const exporting = ref(false);
 const saving = ref(false);
 const deleting = ref(false);
+const search = ref("");
+const filters = ref({});
 
-const dateFrom = ref("");
-const dateTo = ref("");
-const selectedEmployee = ref("");
-const showDeleted = ref(false);
+// Dialogs
+const detailDialog = ref(false);
+const editDialog = ref(false);
+const deleteDialog = ref(false);
 
-const editingItem = ref(null);
-const saleToDelete = ref(null);
+// Selected items
 const selectedSale = ref(null);
-const selectedSaleHistory = ref(null);
-const editForm = ref();
+const editingSale = ref(null);
+const saleToDelete = ref(null);
 
-const editData = ref({
-  total: "",
-  adminNotes: "",
+// Forms
+const editForm = ref({
+  total: 0,
+  reason: "",
 });
+const editFormRef = ref();
 
 const headers = [
-  { title: "Karyawan", key: "users.email", sortable: true },
+  { title: "ID", key: "id", sortable: true },
+  { title: "Employee", key: "employee_email", sortable: true },
   { title: "Total", key: "total", sortable: true },
+  { title: "Items", key: "details", sortable: false },
   { title: "Tanggal", key: "created_at", sortable: true },
-  { title: "Status", key: "status", sortable: false },
-  { title: "Aksi", key: "actions", sortable: false, width: 150 },
+  { title: "Status", key: "edit_status", sortable: false },
 ];
 
-const employeeOptions = computed(() => [
-  { title: "Semua Karyawan", value: "" },
-  ...dataStore.employees.map((emp) => ({
-    title: emp.email,
-    value: emp.id,
-  })),
-]);
-
-const receiptSaleData = computed(() => {
-  if (!selectedSale.value) return {};
-
-  // Enhance items data with complete information from database if available
-  let enhancedSale = {
-    ...selectedSale.value,
-    kasir: selectedSale.value.users?.email?.split("@")[0] || "Admin",
-  };
-
-  // If this is an items sale, try to enhance the items data with current database info
-  if (enhancedSale.details?.type === "items" && enhancedSale.details?.items) {
-    enhancedSale.details.items = enhancedSale.details.items.map((item) => {
-      // Find current item data from store to get complete brand info
-      const currentItem = dataStore.items.find(
-        (dbItem) => dbItem.id === item.id
-      );
-
-      return {
-        ...item,
-        // Use database info if available, otherwise fallback to stored data
-        brand:
-          currentItem?.brand ||
-          item.brand ||
-          (item.id && item.id.toString().startsWith("custom_")
-            ? "Custom"
-            : "Tanpa Merek"),
-        model: currentItem?.model || item.model || "",
-        isCustom: item.id && item.id.toString().startsWith("custom_"),
-        type:
-          item.type ||
-          (item.id && item.id.toString().startsWith("custom_")
-            ? "Custom Item"
-            : ""),
-      };
-    });
-  }
-
-  return enhancedSale;
-});
-
-const filteredSales = computed(() => {
-  let sales = [...dataStore.sales];
-
-  // Date filters
-  if (dateFrom.value) {
-    sales = sales.filter((sale) => sale.created_at >= dateFrom.value);
-  }
-
-  if (dateTo.value) {
-    const endDate = new Date(dateTo.value);
-    endDate.setHours(23, 59, 59, 999);
-    sales = sales.filter((sale) => new Date(sale.created_at) <= endDate);
-  }
-
-  // Employee filter
-  if (selectedEmployee.value) {
-    sales = sales.filter((sale) => sale.employee_id === selectedEmployee.value);
-  }
-
-  // Show/hide deleted
-  if (!showDeleted.value) {
-    sales = sales.filter((sale) => !sale.is_deleted);
-  }
-
-  return sales;
-});
-
-const hasBeenEdited = (sale) => {
-  return Object.keys(sale.edit_log || {}).length > 0;
+const filterOptions = {
+  status: [
+    { title: "Original", value: "original" },
+    { title: "Diedit Admin", value: "edited" },
+  ],
+  employee: computed(() =>
+    dataStore.users.map((user) => ({
+      title: user.email,
+      value: user.id,
+    }))
+  ),
 };
 
-const hasEditHistory = (sale) => {
-  return Object.keys(sale.edit_log || {}).length > 0;
+const tableActions = [
+  {
+    key: "view",
+    icon: "mdi-eye",
+    color: "primary",
+    handler: (item) => showDetails(item),
+  },
+  {
+    key: "edit",
+    icon: "mdi-pencil",
+    color: "warning",
+    handler: (item) => openEditDialog(item),
+  },
+  {
+    key: "delete",
+    icon: "mdi-delete",
+    color: "error",
+    handler: (item) => confirmDelete(item),
+  },
+];
+
+const filteredSales = computed(() => {
+  let sales = dataStore.sales.filter((sale) => !sale.is_deleted);
+
+  // Apply filters
+  if (filters.value.status) {
+    if (filters.value.status === "edited") {
+      sales = sales.filter((sale) => sale.edited_by_admin);
+    } else if (filters.value.status === "original") {
+      sales = sales.filter((sale) => !sale.edited_by_admin);
+    }
+  }
+
+  if (filters.value.employee) {
+    sales = sales.filter((sale) => sale.employee_id === filters.value.employee);
+  }
+
+  // Apply search
+  if (!search.value) return sales;
+
+  const searchLower = search.value.toLowerCase();
+  return sales.filter(
+    (sale) =>
+      sale.id.toString().includes(searchLower) ||
+      getEmployeeName(sale.employee_id).toLowerCase().includes(searchLower) ||
+      sale.total.toString().includes(searchLower)
+  );
+});
+
+const totalSales = computed(() => {
+  return filteredSales.value.reduce((sum, sale) => sum + sale.total, 0);
+});
+
+const getEmployeeName = (employeeId) => {
+  const user = dataStore.users.find((u) => u.id === employeeId);
+  return user ? user.email : "Unknown";
+};
+
+const showDetails = (sale) => {
+  selectedSale.value = sale;
+  detailDialog.value = true;
 };
 
 const openEditDialog = (sale) => {
-  editingItem.value = sale;
-  editData.value = {
+  editingSale.value = sale;
+  editForm.value = {
     total: sale.total,
-    adminNotes: "",
+    reason: "",
   };
   editDialog.value = true;
 };
 
-const saveSaleEdit = async () => {
-  const { valid } = await editForm.value.validate();
+const closeEditDialog = () => {
+  editDialog.value = false;
+  editingSale.value = null;
+  if (editFormRef.value) {
+    editFormRef.value.reset();
+  }
+};
+
+const saveSale = async () => {
+  if (!editFormRef.value) return;
+
+  const { valid } = await editFormRef.value.validate();
   if (!valid) return;
 
   saving.value = true;
 
   try {
-    await updateSale(
-      editingItem.value.id,
-      { total: Number(editData.value.total) },
-      authStore.user.id,
-      true // isAdmin
-    );
+    const now = new Date().toISOString();
+    const editLog = editingSale.value.edit_log || [];
+
+    editLog.push({
+      action: "Edit total penjualan",
+      admin_email: authStore.user.email,
+      timestamp: now,
+      changes: `Total diubah dari ${formatCurrency(
+        editingSale.value.total
+      )} ke ${formatCurrency(editForm.value.total)}`,
+      reason: editForm.value.reason,
+    });
+
+    const { error } = await supabase
+      .from("sales")
+      .update({
+        total: editForm.value.total,
+        edited_by_admin: true,
+        edit_log: editLog,
+      })
+      .eq("id", editingSale.value.id);
+
+    if (error) throw error;
 
     await dataStore.fetchSales();
-    editDialog.value = false;
+    closeEditDialog();
   } catch (error) {
     console.error("Error updating sale:", error);
-    alert("Terjadi kesalahan saat menyimpan perubahan");
+    alert("Terjadi kesalahan saat menyimpan data");
   } finally {
     saving.value = false;
   }
@@ -504,7 +484,15 @@ const deleteSale = async () => {
   deleting.value = true;
 
   try {
-    await deleteSaleAPI(saleToDelete.value.id, authStore.user.id, true);
+    const { error } = await supabase
+      .from("sales")
+      .update({
+        is_deleted: true,
+        deleted_at: new Date().toISOString(),
+      })
+      .eq("id", saleToDelete.value.id);
+
+    if (error) throw error;
 
     await dataStore.fetchSales();
     deleteDialog.value = false;
@@ -517,26 +505,38 @@ const deleteSale = async () => {
   }
 };
 
-const viewDetails = (sale) => {
-  selectedSale.value = sale;
-  detailsDialog.value = true;
-};
+const exportData = async () => {
+  exporting.value = true;
 
-const showEditHistory = (sale) => {
-  selectedSaleHistory.value = sale;
-  historyDialog.value = true;
-};
+  try {
+    const { utils, writeFile } = await import("xlsx");
 
-// Receipt functions
-const printReceipt = (sale) => {
-  selectedSale.value = sale;
-  receiptDialog.value = true;
+    const exportData = filteredSales.value.map((sale) => ({
+      ID: sale.id,
+      Employee: getEmployeeName(sale.employee_id),
+      Total: sale.total,
+      "Items Count": sale.details ? sale.details.length : 0,
+      Tanggal: formatDateTime(sale.created_at),
+      Status: sale.edited_by_admin ? "Diedit Admin" : "Original",
+    }));
+
+    const ws = utils.json_to_sheet(exportData);
+    const wb = utils.book_new();
+    utils.book_append_sheet(wb, ws, "Sales Data");
+
+    writeFile(wb, `sales_${new Date().toISOString().split("T")[0]}.xlsx`);
+  } catch (error) {
+    console.error("Error exporting data:", error);
+    alert("Terjadi kesalahan saat export data");
+  } finally {
+    exporting.value = false;
+  }
 };
 
 onMounted(async () => {
   loading.value = true;
   try {
-    await Promise.all([dataStore.fetchSales(), dataStore.fetchEmployees()]);
+    await Promise.all([dataStore.fetchSales(), dataStore.fetchUsers()]);
   } catch (error) {
     console.error("Error loading data:", error);
   } finally {
@@ -546,7 +546,5 @@ onMounted(async () => {
 </script>
 
 <style scoped>
-.cursor-pointer {
-  cursor: pointer;
-}
+/* Custom styles handled by SmartCard and SmartDataTable */
 </style>
