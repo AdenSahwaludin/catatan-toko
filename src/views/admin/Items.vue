@@ -24,6 +24,8 @@
       :search-value="search"
       :categories="dataStore.categories"
       :selected-category="selectedCategory"
+      :current-page="currentPage"
+      :items-per-page="itemsPerPage"
       search-label="Cari barang..."
       search-placeholder="Nama, barcode, merek, atau model"
       :default-actions="tableActions"
@@ -36,6 +38,8 @@
       }"
       @update:search="search = $event"
       @update:category="selectedCategory = $event"
+      @update:page="currentPage = $event"
+      @update:items-per-page="itemsPerPage = $event"
       @refresh="loadItems"
     >
       <!-- Custom filters slot -->
@@ -299,6 +303,10 @@ const search = ref("");
 const selectedCategory = ref("");
 const brandFilter = ref("");
 const showLowStock = ref(false);
+
+// Pagination state
+const currentPage = ref(1);
+const itemsPerPage = ref(25);
 
 const editingItem = ref(null);
 const itemToDelete = ref(null);
@@ -602,6 +610,11 @@ const onBarcodeDetected = async (barcode) => {
 // Lifecycle
 onMounted(async () => {
   await loadItems();
+});
+
+// Watchers untuk reset pagination
+watch([search, selectedCategory, brandFilter, showLowStock], () => {
+  currentPage.value = 1;
 });
 </script>
 

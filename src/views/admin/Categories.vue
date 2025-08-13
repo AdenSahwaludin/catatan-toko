@@ -21,6 +21,8 @@
       :headers="headers"
       :loading="loading"
       :search-value="search"
+      :current-page="currentPage"
+      :items-per-page="itemsPerPage"
       search-label="Cari kategori..."
       search-placeholder="Nama kategori"
       :show-filters="false"
@@ -33,6 +35,8 @@
         handler: () => openDialog(),
       }"
       @update:search="search = $event"
+      @update:page="currentPage = $event"
+      @update:items-per-page="itemsPerPage = $event"
     >
       <!-- Custom slots -->
       <template #item.name="{ item }">
@@ -114,7 +118,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { useDataStore } from "@/stores/data";
 import { supabase } from "@/utils/supabase";
 import { validateInput } from "@/utils/helpers";
@@ -129,6 +133,10 @@ const deleteDialog = ref(false);
 const saving = ref(false);
 const deleting = ref(false);
 const search = ref("");
+
+// Pagination state
+const currentPage = ref(1);
+const itemsPerPage = ref(25);
 
 const editingCategory = ref(null);
 const categoryToDelete = ref(null);
@@ -268,6 +276,11 @@ onMounted(async () => {
   } finally {
     loading.value = false;
   }
+});
+
+// Watcher untuk reset pagination
+watch(search, () => {
+  currentPage.value = 1;
 });
 </script>
 

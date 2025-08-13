@@ -70,8 +70,12 @@
         :loading="loading"
         :search="searchValue"
         :items-per-page="itemsPerPage"
+        :page="currentPage"
+        :server-items-length="serverItemsLength"
+        :show-current-page="showPagination"
         :items-per-page-options="itemsPerPageOptions"
         v-bind="$attrs"
+        @update:page="updatePage"
         @update:items-per-page="updateItemsPerPage"
         @update:sort-by="updateSortBy"
         @click:row="handleRowClick"
@@ -133,6 +137,21 @@
           </div>
         </template>
       </v-data-table>
+
+      <!-- Custom pagination -->
+      <div
+        v-if="showPagination && totalPages > 1"
+        class="d-flex justify-center pa-4"
+      >
+        <v-pagination
+          :model-value="currentPage"
+          @update:model-value="updatePage"
+          :length="totalPages"
+          :total-visible="7"
+          density="comfortable"
+          color="primary"
+        />
+      </div>
     </v-card>
   </div>
 </template>
@@ -184,6 +203,10 @@ const props = defineProps({
   },
 
   // Pagination props
+  currentPage: {
+    type: Number,
+    default: 1,
+  },
   itemsPerPage: {
     type: Number,
     default: 25,
@@ -197,6 +220,10 @@ const props = defineProps({
       { value: 100, title: "100" },
       { value: -1, title: "Semua" },
     ],
+  },
+  showPagination: {
+    type: Boolean,
+    default: true,
   },
 
   // Action props
@@ -223,6 +250,7 @@ const emit = defineEmits([
   "update:search",
   "update:category",
   "update:available-only",
+  "update:page",
   "update:items-per-page",
   "update:sort-by",
   "refresh",
@@ -254,10 +282,18 @@ const categoryOptions = computed(() => [
   })),
 ]);
 
+const totalPages = computed(() => {
+  if (props.serverItemsLength) {
+    return Math.ceil(props.serverItemsLength / props.itemsPerPage);
+  }
+  return Math.ceil(props.items.length / props.itemsPerPage);
+});
+
 // Methods
 const updateSearch = (value) => emit("update:search", value);
 const updateCategory = (value) => emit("update:category", value);
 const updateAvailableOnly = (value) => emit("update:available-only", value);
+const updatePage = (page) => emit("update:page", page);
 const updateItemsPerPage = (size) => emit("update:items-per-page", size);
 const updateSortBy = (sortBy) => emit("update:sort-by", sortBy);
 const refresh = () => emit("refresh");
