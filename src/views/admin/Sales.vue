@@ -39,12 +39,13 @@
       :headers="headers"
       :loading="loading"
       :search-value="search"
+      :current-page="currentPage"
+      :items-per-page="itemsPerPage"
       search-label="Cari penjualan..."
       search-placeholder="ID, employee, atau total"
       :filters="filters"
       :filter-options="filterOptions"
       :default-actions="tableActions"
-      :items-per-page="15"
       empty-title="Belum Ada Data Penjualan"
       empty-text="Data penjualan akan tampil di sini"
       :empty-action="{
@@ -53,6 +54,8 @@
         handler: () => $router.push('/admin/input-sales'),
       }"
       @update:search="search = $event"
+      @update:page="currentPage = $event"
+      @update:items-per-page="itemsPerPage = $event"
       @update:filters="filters = $event"
     >
       <!-- Custom item slots -->
@@ -66,7 +69,7 @@
               {{ getEmployeeName(item.employee_id) }}
             </div>
             <div class="text-caption text-medium-emphasis">
-              {{ item.employee_email }}
+              {{ item.employee_id }}
             </div>
           </div>
         </div>
@@ -289,7 +292,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { useDataStore } from "@/stores/data";
 import { useAuthStore } from "@/stores/auth";
 import { supabase } from "@/utils/supabase";
@@ -312,6 +315,10 @@ const saving = ref(false);
 const deleting = ref(false);
 const search = ref("");
 const filters = ref({});
+
+// Pagination state
+const currentPage = ref(1);
+const itemsPerPage = ref(15);
 
 // Dialogs
 const detailDialog = ref(false);
@@ -339,18 +346,18 @@ const headers = [
   { title: "Status", key: "edit_status", sortable: false },
 ];
 
-const filterOptions = {
+const filterOptions = computed(() => ({
   status: [
     { title: "Original", value: "original" },
     { title: "Diedit Admin", value: "edited" },
   ],
-  employee: computed(() =>
-    dataStore.users.map((user) => ({
-      title: user.email,
-      value: user.id,
-    }))
-  ),
-};
+  employee: dataStore.users && Array.isArray(dataStore.users) 
+    ? dataStore.users.map((user) => ({
+        title: user.email,
+        value: user.id,
+      }))
+    : [],
+}));
 
 const tableActions = [
   {
@@ -374,6 +381,10 @@ const tableActions = [
 ];
 
 const filteredSales = computed(() => {
+  if (!dataStore.sales || !Array.isArray(dataStore.sales)) {
+    return [];
+  }
+  
   let sales = dataStore.sales.filter((sale) => !sale.is_deleted);
 
   // Apply filters
@@ -406,8 +417,11 @@ const totalSales = computed(() => {
 });
 
 const getEmployeeName = (employeeId) => {
+  if (!dataStore.users || !Array.isArray(dataStore.users)) {
+    return "Loading...";
+  }
   const user = dataStore.users.find((u) => u.id === employeeId);
-  return user ? user.email : "Unknown";
+  return user ? user.email : "Unknown Employee";
 };
 
 const showDetails = (sale) => {
@@ -543,6 +557,11 @@ onMounted(async () => {
     loading.value = false;
   }
 });
+
+// Watcher untuk reset pagination
+watch([search, filters], () => {
+  currentPage.value = 1;
+}, { deep: true });
 </script>
 
 <style scoped>
