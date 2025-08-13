@@ -29,7 +29,15 @@
         :headers="headers"
         :items="filteredEmployees"
         :loading="loading"
+        :search="search"
         item-value="id"
+        :items-per-page="25"
+        :items-per-page-options="[
+          { value: 10, title: '10' },
+          { value: 25, title: '25' },
+          { value: 50, title: '50' },
+          { value: -1, title: 'Semua' },
+        ]"
       >
         <template #item.role="{ item }">
           <v-chip

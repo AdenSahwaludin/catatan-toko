@@ -40,7 +40,7 @@
     >
       <!-- Custom filters slot -->
       <template #filters>
-        <v-col cols="12" md="3">
+        <v-col cols="12" md="2">
           <v-text-field
             v-model="brandFilter"
             label="Merek"

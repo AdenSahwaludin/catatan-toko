@@ -295,8 +295,6 @@
         item-value="id"
         density="compact"
         :items-per-page="itemsPerPage"
-        :page="currentPage"
-        @update:page="currentPage = $event"
         @update:items-per-page="itemsPerPage = $event"
         :items-per-page-options="[
           { value: 12, title: '12' },

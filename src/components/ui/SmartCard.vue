@@ -185,13 +185,14 @@ const handleClick = (event) => {
   align-items: flex-start;
   width: 100%;
   gap: 16px;
+  align-items: center;
   flex-wrap: wrap;
   min-height: 48px;
 }
 
 .smart-card-header__main {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
   flex: 1;
   min-width: 0; /* Allow shrinking */
   gap: 12px;
