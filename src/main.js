@@ -5,6 +5,7 @@ import router from "./router";
 import vuetify from "./plugins/vuetify";
 import { useAuthStore } from "./stores/auth";
 import { useThemeStore } from "./stores/theme";
+import { useDataStore } from "./stores/data";
 import { setupSessionMonitor } from "./utils/sessionMonitor";
 
 const app = createApp(App);
@@ -17,6 +18,7 @@ app.use(vuetify);
 // Initialize stores
 const authStore = useAuthStore();
 const themeStore = useThemeStore();
+const dataStore = useDataStore();
 
 // Initialize auth store with localStorage data
 authStore.initAuth();
@@ -34,5 +36,13 @@ vuetify.theme.global.name.value = themeStore.isDark ? "dark" : "light";
 themeStore.$subscribe(() => {
   vuetify.theme.global.name.value = themeStore.isDark ? "dark" : "light";
 });
+
+// Preload critical data jika user sudah login
+if (authStore.isLoggedIn) {
+  // Preload data penting tanpa blocking UI
+  setTimeout(() => {
+    dataStore.fetchInitialData().catch(console.error);
+  }, 100);
+}
 
 app.mount("#app");

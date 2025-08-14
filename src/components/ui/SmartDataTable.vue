@@ -244,6 +244,16 @@ const props = defineProps({
 
   // Loading props
   loadingText: String,
+  
+  // Performance props
+  virtualScrolling: {
+    type: Boolean,
+    default: false,
+  },
+  lazyLoading: {
+    type: Boolean,
+    default: false,
+  },
 });
 
 const emit = defineEmits([

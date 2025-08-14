@@ -66,10 +66,7 @@
           </v-avatar>
           <div>
             <div class="font-weight-medium">
-              {{ getEmployeeName(item.employee_id) }}
-            </div>
-            <div class="text-caption text-medium-emphasis">
-              {{ item.employee_id }}
+              {{ employeeNames[item.employee_id] || 'Loading...' }}
             </div>
           </div>
         </div>
@@ -88,24 +85,6 @@
             {{ formatTime(item.created_at) }}
           </div>
         </div>
-      </template>
-
-      <template #item.details="{ item }">
-        <v-tooltip>
-          <template #activator="{ props }">
-            <v-chip
-              v-bind="props"
-              color="primary"
-              variant="tonal"
-              size="small"
-              @click="showDetails(item)"
-              style="cursor: pointer"
-            >
-              {{ item.details ? item.details.length : 0 }} item
-            </v-chip>
-          </template>
-          <span>Klik untuk lihat detail</span>
-        </v-tooltip>
       </template>
 
       <template #item.edit_status="{ item }">
@@ -338,12 +317,10 @@ const editForm = ref({
 const editFormRef = ref();
 
 const headers = [
-  { title: "ID", key: "id", sortable: true },
   { title: "Employee", key: "employee_email", sortable: true },
   { title: "Total", key: "total", sortable: true },
-  { title: "Items", key: "details", sortable: false },
-  { title: "Tanggal", key: "created_at", sortable: true },
   { title: "Status", key: "edit_status", sortable: false },
+  { title: "Tanggal", key: "created_at", sortable: true },
 ];
 
 const filterOptions = computed(() => ({
@@ -417,12 +394,23 @@ const totalSales = computed(() => {
 });
 
 const getEmployeeName = (employeeId) => {
-  if (!dataStore.users || !Array.isArray(dataStore.users)) {
+  if (!dataStore.users || !Array.isArray(dataStore.users) || dataStore.users.length === 0) {
     return "Loading...";
   }
   const user = dataStore.users.find((u) => u.id === employeeId);
-  return user ? user.email : "Unknown Employee";
+  return user ? user.email : "Employee tidak ditemukan";
 };
+
+// Computed property untuk memastikan reaktivitas
+const employeeNames = computed(() => {
+  const names = {};
+  if (dataStore.users && Array.isArray(dataStore.users)) {
+    dataStore.users.forEach(user => {
+      names[user.id] = user.email;
+    });
+  }
+  return names;
+});
 
 const showDetails = (sale) => {
   selectedSale.value = sale;
@@ -550,7 +538,16 @@ const exportData = async () => {
 onMounted(async () => {
   loading.value = true;
   try {
-    await Promise.all([dataStore.fetchSales(), dataStore.fetchUsers()]);
+    // Gunakan fetchInitialData untuk loading yang optimal dengan caching
+    await dataStore.fetchInitialData();
+    
+    // Fetch sales secara terpisah jika belum ada data
+    if (dataStore.sales.length === 0) {
+      await dataStore.fetchSales();
+    }
+    
+    console.log('Users loaded:', dataStore.users?.length, dataStore.users);
+    console.log('Sales loaded:', dataStore.sales?.length);
   } catch (error) {
     console.error("Error loading data:", error);
   } finally {
@@ -562,6 +559,11 @@ onMounted(async () => {
 watch([search, filters], () => {
   currentPage.value = 1;
 }, { deep: true });
+
+// Watcher untuk memastikan data users ter-load
+watch(() => dataStore.users, (newUsers) => {
+  console.log('Users data changed:', newUsers?.length);
+}, { immediate: true, deep: true });
 </script>
 
 <style scoped>

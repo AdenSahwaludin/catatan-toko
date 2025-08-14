@@ -29,8 +29,16 @@ export const getItems = async (filters = {}) => {
     .from("items")
     .select(
       `
-      *,
-      categories(name)
+      id,
+      name,
+      category_id,
+      brand,
+      model,
+      price,
+      stock,
+      barcode,
+      created_at,
+      categories!inner(name)
     `
     )
     .order("name");
@@ -40,7 +48,7 @@ export const getItems = async (filters = {}) => {
   }
 
   if (filters.search) {
-    query = query.ilike("name", `%${filters.search}%`);
+    query = query.or(`name.ilike.%${filters.search}%,brand.ilike.%${filters.search}%,model.ilike.%${filters.search}%,barcode.ilike.%${filters.search}%`);
   }
 
   if (filters.brand) {
@@ -49,6 +57,11 @@ export const getItems = async (filters = {}) => {
 
   if (filters.lowStock) {
     query = query.lt("stock", filters.lowStock);
+  }
+
+  // Limit hasil jika tidak ada filter untuk performa yang lebih baik
+  if (!filters.search && !filters.category_id && !filters.brand && !filters.lowStock) {
+    query = query.limit(500); // Batasi ke 500 items untuk loading yang lebih cepat
   }
 
   const { data, error } = await query;
@@ -62,8 +75,18 @@ export const getSales = async (filters = {}) => {
     .from("sales")
     .select(
       `
-      *,
-      users(email)
+      id,
+      employee_id,
+      total,
+      details,
+      created_at,
+      edited_by_admin,
+      edit_log,
+      is_deleted,
+      paid,
+      change,
+      payment_timestamp,
+      users!inner(email)
     `
     )
     .order("created_at", { ascending: false });
@@ -80,7 +103,7 @@ export const getSales = async (filters = {}) => {
     query = query.lte("created_at", filters.end_date);
   }
 
-  if (filters.hideDeleted) {
+  if (filters.hideDeleted !== false) {
     query = query.eq("is_deleted", false);
   }
 
@@ -89,6 +112,11 @@ export const getSales = async (filters = {}) => {
     query = query.not("paid", "is", null);
   } else if (filters.paymentStatus === "unpaid") {
     query = query.is("paid", null);
+  }
+
+  // Limit hasil untuk performa yang lebih baik - ambil 200 data terbaru
+  if (!filters.employee_id && !filters.start_date && !filters.end_date) {
+    query = query.limit(200);
   }
 
   const { data, error } = await query;
