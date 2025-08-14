@@ -122,8 +122,8 @@
     <v-app-bar
       elevation="0"
       :class="appBarClasses"
-      :color="role === 'employee' ? 'primary' : undefined"
-      :dark="role === 'employee'"
+      :color="themeStore.isDark ? '#1d2839' : '#ffffff'"
+      :dark="themeStore.isDark"
       density="comfortable"
     >
       <template #prepend>
@@ -455,7 +455,11 @@ watch(isMobile, (newVal) => {
 }
 
 .employee-brand {
-  background: linear-gradient(135deg, #1976d2 0%, #1565c0 100%) !important;
+  background: linear-gradient(
+    135deg,
+    #1d283a 0%,
+    rgb(7, 68, 138) 100%
+  ) !important;
   box-shadow: 0 4px 15px rgba(25, 118, 210, 0.3);
 }
 

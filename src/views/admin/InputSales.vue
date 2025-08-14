@@ -309,6 +309,7 @@
                 md="3"
               >
                 <v-card
+                  class="h-100"
                   :ripple="true"
                   hover
                   :disabled="item.stock === 0"
@@ -338,9 +339,7 @@
                     </div>
 
                     <!-- Item name -->
-                    <div
-                      class="text-subtitle-2 font-weight-bold mb-1 text-truncate"
-                    >
+                    <div class="text-subtitle-2 font-weight-bold mb-1">
                       {{ item.name }}
                     </div>
 
