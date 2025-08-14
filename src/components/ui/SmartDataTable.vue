@@ -244,7 +244,7 @@ const props = defineProps({
 
   // Loading props
   loadingText: String,
-  
+
   // Performance props
   virtualScrolling: {
     type: Boolean,

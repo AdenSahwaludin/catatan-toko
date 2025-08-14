@@ -11,6 +11,7 @@
   "dependencies": {
     "@mdi/font": "^7.4.47",
     "@supabase/supabase-js": "^2.53.0",
+    "@vercel/analytics": "^1.5.0",
     "chart.js": "^4.5.0",
     "jspdf": "^3.0.1",
     "pinia": "^3.0.3",

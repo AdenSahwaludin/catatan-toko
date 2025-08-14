@@ -48,7 +48,9 @@ export const getItems = async (filters = {}) => {
   }
 
   if (filters.search) {
-    query = query.or(`name.ilike.%${filters.search}%,brand.ilike.%${filters.search}%,model.ilike.%${filters.search}%,barcode.ilike.%${filters.search}%`);
+    query = query.or(
+      `name.ilike.%${filters.search}%,brand.ilike.%${filters.search}%,model.ilike.%${filters.search}%,barcode.ilike.%${filters.search}%`
+    );
   }
 
   if (filters.brand) {
@@ -60,7 +62,12 @@ export const getItems = async (filters = {}) => {
   }
 
   // Limit hasil jika tidak ada filter untuk performa yang lebih baik
-  if (!filters.search && !filters.category_id && !filters.brand && !filters.lowStock) {
+  if (
+    !filters.search &&
+    !filters.category_id &&
+    !filters.brand &&
+    !filters.lowStock
+  ) {
     query = query.limit(500); // Batasi ke 500 items untuk loading yang lebih cepat
   }
 

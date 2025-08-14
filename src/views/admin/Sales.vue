@@ -66,7 +66,7 @@
           </v-avatar>
           <div>
             <div class="font-weight-medium">
-              {{ employeeNames[item.employee_id] || 'Loading...' }}
+              {{ employeeNames[item.employee_id] || "Loading..." }}
             </div>
           </div>
         </div>
@@ -328,12 +328,13 @@ const filterOptions = computed(() => ({
     { title: "Original", value: "original" },
     { title: "Diedit Admin", value: "edited" },
   ],
-  employee: dataStore.users && Array.isArray(dataStore.users) 
-    ? dataStore.users.map((user) => ({
-        title: user.email,
-        value: user.id,
-      }))
-    : [],
+  employee:
+    dataStore.users && Array.isArray(dataStore.users)
+      ? dataStore.users.map((user) => ({
+          title: user.email,
+          value: user.id,
+        }))
+      : [],
 }));
 
 const tableActions = [
@@ -361,7 +362,7 @@ const filteredSales = computed(() => {
   if (!dataStore.sales || !Array.isArray(dataStore.sales)) {
     return [];
   }
-  
+
   let sales = dataStore.sales.filter((sale) => !sale.is_deleted);
 
   // Apply filters
@@ -394,7 +395,11 @@ const totalSales = computed(() => {
 });
 
 const getEmployeeName = (employeeId) => {
-  if (!dataStore.users || !Array.isArray(dataStore.users) || dataStore.users.length === 0) {
+  if (
+    !dataStore.users ||
+    !Array.isArray(dataStore.users) ||
+    dataStore.users.length === 0
+  ) {
     return "Loading...";
   }
   const user = dataStore.users.find((u) => u.id === employeeId);
@@ -405,7 +410,7 @@ const getEmployeeName = (employeeId) => {
 const employeeNames = computed(() => {
   const names = {};
   if (dataStore.users && Array.isArray(dataStore.users)) {
-    dataStore.users.forEach(user => {
+    dataStore.users.forEach((user) => {
       names[user.id] = user.email;
     });
   }
@@ -540,14 +545,14 @@ onMounted(async () => {
   try {
     // Gunakan fetchInitialData untuk loading yang optimal dengan caching
     await dataStore.fetchInitialData();
-    
+
     // Fetch sales secara terpisah jika belum ada data
     if (dataStore.sales.length === 0) {
       await dataStore.fetchSales();
     }
-    
-    console.log('Users loaded:', dataStore.users?.length, dataStore.users);
-    console.log('Sales loaded:', dataStore.sales?.length);
+
+    console.log("Users loaded:", dataStore.users?.length, dataStore.users);
+    console.log("Sales loaded:", dataStore.sales?.length);
   } catch (error) {
     console.error("Error loading data:", error);
   } finally {
@@ -556,14 +561,22 @@ onMounted(async () => {
 });
 
 // Watcher untuk reset pagination
-watch([search, filters], () => {
-  currentPage.value = 1;
-}, { deep: true });
+watch(
+  [search, filters],
+  () => {
+    currentPage.value = 1;
+  },
+  { deep: true }
+);
 
 // Watcher untuk memastikan data users ter-load
-watch(() => dataStore.users, (newUsers) => {
-  console.log('Users data changed:', newUsers?.length);
-}, { immediate: true, deep: true });
+watch(
+  () => dataStore.users,
+  (newUsers) => {
+    console.log("Users data changed:", newUsers?.length);
+  },
+  { immediate: true, deep: true }
+);
 </script>
 
 <style scoped>
