@@ -90,8 +90,8 @@
 
         <v-card-text>
           <!-- Search and Filters -->
-          <v-row class="mb-4">
-            <v-col cols="12" md="4">
+          <v-row>
+            <v-col cols="12" md="6">
               <v-text-field
                 v-model="itemSearch"
                 label="Cari barang atau barcode..."
@@ -114,7 +114,29 @@
                 </template>
               </v-text-field>
             </v-col>
-            <v-col cols="12" md="2">
+            <v-col cols="12" md="6">
+              <v-select
+                v-model="selectedCategory"
+                :items="categoryOptions"
+                label="Kategori"
+                variant="outlined"
+                density="compact"
+                clearable
+              />
+            </v-col>
+            <v-col cols="12" md="1" class="d-block d-md-none">
+              <v-select
+                v-model="itemsPerPage"
+                :items="[12, 24, 48, 96]"
+                label="Per halaman"
+                variant="outlined"
+                density="compact"
+                hide-details
+              />
+            </v-col>
+          </v-row>
+          <v-row class="">
+            <v-col cols="3" md="2">
               <v-btn
                 color="primary"
                 variant="outlined"
@@ -132,39 +154,23 @@
                 icon="mdi-qrcode-scan"
                 @click="openBarcodeScanner"
                 :disabled="loadingItems"
-                block
-                class="d-flex d-md-none"
+                size="large"
+                class="d-flex d-md-none mx-auto"
               />
             </v-col>
-            <v-col cols="12" md="3">
-              <v-select
-                v-model="selectedCategory"
-                :items="categoryOptions"
-                label="Kategori"
-                variant="outlined"
-                density="compact"
-                clearable
-              />
-            </v-col>
-            <v-col cols="12" md="2">
+            <v-col
+              class="d-flex"
+              cols="5"
+              md="2"
+              v-if="!settingsStore.isStockHidden"
+            >
               <v-switch
-                v-if="!settingsStore.isStockHidden"
                 v-model="showAvailableOnly"
                 label="Stok tersedia"
                 color="primary"
               />
             </v-col>
-            <v-col cols="12" md="1" class="d-block d-md-none">
-              <v-select
-                v-model="itemsPerPage"
-                :items="[12, 24, 48, 96]"
-                label="Per halaman"
-                variant="outlined"
-                density="compact"
-                hide-details
-              />
-            </v-col>
-            <v-col cols="12" md="1">
+            <v-col cols="4" md="2" class="mb-4">
               <v-btn
                 @click="refreshItems"
                 :loading="loadingItems"
@@ -172,8 +178,10 @@
                 variant="outlined"
                 prepend-icon="mdi-refresh"
                 block
+                class="text-none"
+                style="min-width: 100px"
               >
-                Refresh
+                <span>Refresh</span>
               </v-btn>
             </v-col>
           </v-row>
