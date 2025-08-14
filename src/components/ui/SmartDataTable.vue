@@ -57,7 +57,9 @@
           </v-row>
 
           <!-- Custom filters slot -->
-          <slot name="filters" />
+          <div v-if="$slots.filters" class="mt-3">
+            <slot name="filters" />
+          </div>
         </v-card-text>
       </v-card>
     </div>

@@ -10,6 +10,16 @@
       class="mb-4"
     >
       <template #actions>
+        <v-btn
+          color="secondary"
+          variant="outlined"
+          prepend-icon="mdi-qrcode-scan"
+          @click="openBarcodeScanner"
+          :disabled="loading"
+          class="mr-2"
+        >
+          Scan Barcode
+        </v-btn>
         <v-btn color="primary" prepend-icon="mdi-plus" @click="openDialog()">
           Tambah Barang
         </v-btn>
@@ -44,29 +54,27 @@
     >
       <!-- Custom filters slot -->
       <template #filters>
-        <v-col cols="12" md="2">
-          <v-text-field
-            v-model="brandFilter"
-            label="Merek"
-            variant="outlined"
-            density="compact"
-            clearable
-          />
-        </v-col>
-        <v-col cols="12" md="2" v-if="!settingsStore.isStockHidden">
-          <v-switch
-            v-model="showLowStock"
-            label="Stok menipis"
-            color="warning"
-          />
-        </v-col>
-        <v-col cols="12" md="2">
-          <v-btn
-            icon="mdi-qrcode-scan"
-            variant="outlined"
-            @click="openBarcodeScanner"
-          />
-        </v-col>
+        <v-row>
+          <v-col cols="12" md="3">
+            <v-text-field
+              v-model="brandFilter"
+              label="Merek"
+              variant="outlined"
+              density="compact"
+              clearable
+              hide-details
+            />
+          </v-col>
+          <v-col cols="12" md="3" v-if="!settingsStore.isStockHidden">
+            <v-switch
+              v-model="showLowStock"
+              label="Stok menipis"
+              color="warning"
+              hide-details
+              density="compact"
+            />
+          </v-col>
+        </v-row>
       </template>
 
       <!-- Custom slots untuk kolom khusus -->
@@ -237,8 +245,13 @@
                       icon="mdi-qrcode-scan"
                       variant="text"
                       size="small"
+                      color="primary"
                       @click="openBarcodeScanner"
-                    />
+                    >
+                      <v-tooltip activator="parent" location="bottom">
+                        Scan Barcode
+                      </v-tooltip>
+                    </v-btn>
                   </template>
                 </v-text-field>
               </v-col>
@@ -273,8 +286,12 @@
       </v-card>
     </v-dialog>
 
-    <!-- Barcode Scanner -->
-    <BarcodeScanner v-model="barcodeScanner" @detected="onBarcodeDetected" />
+    <!-- ZXing Barcode Scanner -->
+    <ZXingBarcodeScanner
+      v-model="barcodeScanner"
+      mode="display"
+      @scan-result="onBarcodeDetected"
+    />
   </div>
 </template>
 
@@ -287,7 +304,7 @@ import { formatCurrency, validateInput } from "@/utils/helpers";
 import { useDebounce } from "@/composables/usePerformance";
 import SmartCard from "@/components/ui/SmartCard.vue";
 import SmartDataTable from "@/components/ui/SmartDataTable.vue";
-import BarcodeScanner from "@/components/BarcodeScanner2.vue";
+import ZXingBarcodeScanner from "@/components/ZXingBarcodeScanner.vue";
 
 const dataStore = useDataStore();
 const settingsStore = useSettingsStore();

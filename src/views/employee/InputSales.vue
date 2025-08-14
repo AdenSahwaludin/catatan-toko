@@ -964,8 +964,13 @@
       </v-card>
     </v-dialog>
 
-    <!-- Barcode Scanner -->
-    <BarcodeScanner v-model="barcodeScanner" @detected="onBarcodeDetected" />
+    <!-- Barcode Scanner with ZXing -->
+    <ZXingBarcodeScanner
+      v-model="barcodeScanner"
+      mode="cart"
+      @add-to-cart="handleBarcodeAddToCart"
+      @scan-result="handleBarcodeResult"
+    />
   </div>
 </template>
 
@@ -982,7 +987,7 @@ import {
 } from "@/utils/supabase";
 import { formatCurrency, validateInput } from "@/utils/helpers";
 import Nota from "@/components/Nota.vue";
-import BarcodeScanner from "@/components/BarcodeScanner2.vue";
+import ZXingBarcodeScanner from "@/components/ZXingBarcodeScanner.vue";
 
 const authStore = useAuthStore();
 const dataStore = useDataStore();
@@ -1713,33 +1718,46 @@ const confirmPayment = async (shouldPrint) => {
   }
 };
 
-// Barcode scanner functions
+// Enhanced barcode scanner functions
 const openBarcodeScanner = () => {
   barcodeScanner.value = true;
 };
 
-const onBarcodeDetected = async (barcode) => {
-  console.log("Barcode detected:", barcode);
+const handleBarcodeAddToCart = async (barcode) => {
+  console.log("Barcode scanned for cart:", barcode);
 
-  // Search for item by barcode
   const item = dataStore.items.find((item) => item.barcode === barcode);
 
   if (item) {
-    // Clear search and add item to cart or show in results
-    itemSearch.value = "";
     handleItemClick(item);
+    notificationStore.addNotification({
+      type: "success",
+      message: `${item.name} ditambahkan ke keranjang via scan`,
+    });
+  } else {
+    notificationStore.addNotification({
+      type: "warning",
+      message: `Barcode ${barcode} tidak ditemukan`,
+    });
+  }
+};
 
+const handleBarcodeResult = async (barcode) => {
+  console.log("Barcode scanned for display:", barcode);
+
+  itemSearch.value = barcode;
+
+  const item = dataStore.items.find((item) => item.barcode === barcode);
+
+  if (item) {
     notificationStore.addNotification({
       type: "success",
       message: `Barang ditemukan: ${item.name}`,
     });
   } else {
-    // Set search to barcode for manual search
-    itemSearch.value = barcode;
-
     notificationStore.addNotification({
       type: "warning",
-      message: `Barcode ${barcode} tidak ditemukan di database`,
+      message: `Barcode ${barcode} tidak ditemukan`,
     });
   }
 };

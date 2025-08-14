@@ -2,7 +2,18 @@
   <div>
     <v-row class="mb-4">
       <v-col cols="12">
-        <h2 class="text-h5 font-weight-bold">Daftar Barang</h2>
+        <div class="d-flex justify-space-between align-center flex-wrap">
+          <h2 class="text-h5 font-weight-bold">Daftar Barang</h2>
+          <v-btn
+            color="primary"
+            prepend-icon="mdi-qrcode-scan"
+            @click="openBarcodeScanner"
+            :disabled="loading"
+            variant="elevated"
+          >
+            Scan Barcode
+          </v-btn>
+        </div>
       </v-col>
     </v-row>
 
@@ -20,7 +31,22 @@
               clearable
               hint="Ketik nama barang atau scan/ketik barcode"
               persistent-hint
-            />
+            >
+              <template #append-inner>
+                <v-btn
+                  icon="mdi-qrcode-scan"
+                  variant="text"
+                  size="small"
+                  color="primary"
+                  @click="openBarcodeScanner"
+                  :disabled="loading"
+                >
+                  <v-tooltip activator="parent" location="bottom">
+                    Scan Barcode
+                  </v-tooltip>
+                </v-btn>
+              </template>
+            </v-text-field>
           </v-col>
 
           <v-col cols="12" sm="6" md="3">
@@ -59,7 +85,7 @@
         <v-row class="mt-2">
           <v-col cols="12" class="d-flex gap-2">
             <v-btn
-              color="primary"
+              color="secondary"
               variant="outlined"
               prepend-icon="mdi-refresh"
               @click="refreshData"
@@ -432,6 +458,13 @@
         <v-badge :content="quickCart.length" color="error" />
       </template>
     </v-fab>
+
+    <!-- ZXing Barcode Scanner -->
+    <ZXingBarcodeScanner
+      v-model="barcodeScanner"
+      mode="display"
+      @scan-result="onBarcodeDetected"
+    />
   </div>
 </template>
 
@@ -441,6 +474,7 @@ import { useRouter } from "vue-router";
 import { useDataStore } from "@/stores/data";
 import { useSettingsStore } from "@/stores/settings";
 import { formatCurrency, validateInput } from "@/utils/helpers";
+import ZXingBarcodeScanner from "@/components/ZXingBarcodeScanner.vue";
 
 const router = useRouter();
 const dataStore = useDataStore();
@@ -462,6 +496,7 @@ const quickSaleDialog = ref(false);
 const selectedItem = ref(null);
 const quickSaleQuantity = ref(1);
 const quickCart = ref([]);
+const barcodeScanner = ref(false);
 
 // Debounce untuk search
 const searchTimeout = ref(null);
@@ -651,6 +686,36 @@ const clearFilters = () => {
   if (searchTimeout.value) {
     clearTimeout(searchTimeout.value);
     searchTimeout.value = null;
+  }
+};
+
+// Barcode scanner functions
+const openBarcodeScanner = () => {
+  barcodeScanner.value = true;
+};
+
+const onBarcodeDetected = async (barcode) => {
+  console.log("Barcode detected:", barcode);
+
+  // Search for item by barcode
+  const item = dataStore.items.find((item) => item.barcode === barcode);
+
+  if (item) {
+    // Set search to show the item
+    search.value = barcode;
+    debouncedSearch.value = barcode;
+
+    // Open quick sale dialog for the found item
+    selectedItem.value = item;
+    quickSaleQuantity.value = 1;
+    quickSaleDialog.value = true;
+  } else {
+    // Set search to barcode for manual search
+    search.value = barcode;
+    debouncedSearch.value = barcode;
+
+    // Show alert that item not found
+    alert(`Barcode ${barcode} tidak ditemukan di database`);
   }
 };
 
