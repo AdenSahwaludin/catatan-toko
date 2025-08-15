@@ -677,8 +677,11 @@ const onBarcodeDetected = async (barcode) => {
       }
     } else {
       // Barcode belum ada, buka dialog tambah dengan barcode terisi
-      formData.value.barcode = barcode;
       openDialog();
+      // Tunggu sedikit untuk memastikan dialog sudah terbuka, lalu isi barcode
+      setTimeout(() => {
+        formData.value.barcode = barcode;
+      }, 100);
     }
   } else {
     // Scan dari tabel - cari barang berdasarkan barcode
