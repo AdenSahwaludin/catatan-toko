@@ -54,6 +54,18 @@
                 Refresh
               </v-btn>
             </v-col>
+
+            <v-col cols="12" md="2" v-if="showBarcodeScanner">
+              <v-btn
+                @click="openScanner"
+                color="secondary"
+                variant="outlined"
+                prepend-icon="mdi-qrcode-scan"
+                block
+              >
+                Scan
+              </v-btn>
+            </v-col>
           </v-row>
 
           <!-- Custom filters slot -->
@@ -203,6 +215,10 @@ const props = defineProps({
     type: Boolean,
     default: true,
   },
+  showBarcodeScanner: {
+    type: Boolean,
+    default: false,
+  },
 
   // Pagination props
   currentPage: {
@@ -267,6 +283,7 @@ const emit = defineEmits([
   "update:sort-by",
   "refresh",
   "row:click",
+  "open-scanner",
 ]);
 
 // Computed properties
@@ -309,6 +326,7 @@ const updatePage = (page) => emit("update:page", page);
 const updateItemsPerPage = (size) => emit("update:items-per-page", size);
 const updateSortBy = (sortBy) => emit("update:sort-by", sortBy);
 const refresh = () => emit("refresh");
+const openScanner = () => emit("open-scanner");
 
 const handleRowClick = (event, { item }) => {
   if (props.clickableRows) {

@@ -10,19 +10,49 @@
       class="mb-4"
     >
       <template #actions>
-        <v-btn
-          color="secondary"
-          variant="outlined"
-          prepend-icon="mdi-qrcode-scan"
-          @click="openBarcodeScanner"
-          :disabled="loading"
-          class="mr-2"
-        >
-          Scan Barcode
-        </v-btn>
-        <v-btn color="primary" prepend-icon="mdi-plus" @click="openDialog()">
-          Tambah Barang
-        </v-btn>
+        <div class="d-flex ga-2 align-center">
+          <!-- Desktop: Button dengan text -->
+          <v-btn
+            color="primary"
+            prepend-icon="mdi-plus"
+            @click="openDialog()"
+            class="d-none d-sm-flex"
+          >
+            Tambah Barang
+          </v-btn>
+
+          <!-- Mobile: Floating round button dengan hanya icon -->
+          <v-btn
+            color="primary"
+            icon="mdi-plus"
+            size="small"
+            class="d-flex d-sm-none"
+            @click="openDialog()"
+          />
+
+          <!-- QR Scanner button untuk menambah barang -->
+          <v-btn
+            color="secondary"
+            variant="outlined"
+            prepend-icon="mdi-qrcode-scan"
+            @click="openQRScannerForAdd"
+            :disabled="loading"
+            class="d-none d-sm-flex"
+          >
+            Scan untuk Tambah
+          </v-btn>
+
+          <!-- Mobile QR Scanner -->
+          <v-btn
+            color="secondary"
+            variant="outlined"
+            icon="mdi-qrcode-scan"
+            size="small"
+            class="d-flex d-sm-none"
+            @click="openQRScannerForAdd"
+            :disabled="loading"
+          />
+        </div>
       </template>
     </SmartCard>
 
@@ -36,6 +66,7 @@
       :selected-category="selectedCategory"
       :current-page="currentPage"
       :items-per-page="itemsPerPage"
+      :show-barcode-scanner="true"
       search-label="Cari barang..."
       search-placeholder="Nama, barcode, merek, atau model"
       :default-actions="tableActions"
@@ -51,6 +82,7 @@
       @update:page="currentPage = $event"
       @update:items-per-page="itemsPerPage = $event"
       @refresh="loadItems"
+      @open-scanner="openBarcodeScanner"
     >
       <!-- Custom filters slot -->
       <template #filters>
@@ -246,7 +278,7 @@
                       variant="text"
                       size="small"
                       color="primary"
-                      @click="openBarcodeScanner"
+                      @click="openBarcodeScannerForForm"
                     >
                       <v-tooltip activator="parent" location="bottom">
                         Scan Barcode
@@ -315,6 +347,7 @@ const deleteDialog = ref(false);
 const saving = ref(false);
 const deleting = ref(false);
 const barcodeScanner = ref(false);
+const scanMode = ref("search"); // 'search', 'form', or 'add'
 
 const search = ref("");
 const selectedCategory = ref("");
@@ -603,25 +636,84 @@ const validateBarcode = (code) => {
 
 // Barcode scanner functions
 const openBarcodeScanner = () => {
+  scanMode.value = "search";
+  barcodeScanner.value = true;
+};
+
+const openBarcodeScannerForForm = () => {
+  scanMode.value = "form";
+  barcodeScanner.value = true;
+};
+
+const openQRScannerForAdd = () => {
+  scanMode.value = "add";
   barcodeScanner.value = true;
 };
 
 const onBarcodeDetected = async (barcode) => {
-  if (dialog.value) {
+  barcodeScanner.value = false;
+
+  if (scanMode.value === "form") {
+    // Scan dari form - masukkan barcode ke form
     formData.value.barcode = barcode;
-  } else {
-    // Search for item with this barcode
+  } else if (scanMode.value === "add") {
+    // Scan untuk menambah barang baru - cek duplikasi terlebih dahulu
     const existingItem = dataStore.items.find(
       (item) => item.barcode === barcode
     );
+
     if (existingItem) {
-      openDialog(existingItem);
+      // Jika barcode sudah ada, tanyakan apakah ingin edit atau tetap buat baru
+      const shouldEdit = confirm(
+        `Barcode ${barcode} sudah digunakan oleh barang "${existingItem.name}". Apakah Anda ingin mengedit barang tersebut?`
+      );
+
+      if (shouldEdit) {
+        openDialog(existingItem);
+      } else {
+        // Tetap buka dialog tambah baru dengan barcode dikosongkan
+        openDialog();
+        alert("Silakan gunakan barcode yang berbeda untuk barang baru.");
+      }
     } else {
+      // Barcode belum ada, buka dialog tambah dengan barcode terisi
       formData.value.barcode = barcode;
       openDialog();
     }
+  } else {
+    // Scan dari tabel - cari barang berdasarkan barcode
+    const existingItem = dataStore.items.find(
+      (item) => item.barcode === barcode
+    );
+
+    if (existingItem) {
+      // Jika barang ditemukan, highlight item dalam tabel dengan scroll
+      highlightSearchResult(existingItem);
+      // Set search untuk menampilkan item yang ditemukan
+      search.value = barcode;
+    } else {
+      // Jika barang tidak ditemukan, buka dialog tambah dengan barcode terisi
+      formData.value.barcode = barcode;
+      openDialog();
+      // Tampilkan notifikasi
+      alert(
+        `Barang dengan barcode ${barcode} tidak ditemukan. Silakan tambah barang baru.`
+      );
+    }
   }
-  barcodeScanner.value = false;
+};
+
+const highlightSearchResult = (item) => {
+  // Reset filter dan category untuk memastikan item terlihat
+  selectedCategory.value = "";
+  brandFilter.value = "";
+  showLowStock.value = false;
+  currentPage.value = 1;
+
+  // Set search untuk menampilkan item
+  setTimeout(() => {
+    search.value = item.barcode || item.name;
+  }, 100);
 };
 
 // Lifecycle
