@@ -155,16 +155,23 @@
           <v-divider class="my-4" />
 
           <h3 class="mb-3">Item yang Dijual</h3>
-          
+
           <!-- Debug info -->
-          <div v-if="getSaleItems(selectedSale)" class="text-caption text-medium-emphasis mb-2">
+          <div
+            v-if="getSaleItems(selectedSale)"
+            class="text-caption text-medium-emphasis mb-2"
+          >
             Details found: {{ getSaleItems(selectedSale).length }} items
           </div>
           <div v-else class="text-caption text-medium-emphasis mb-2">
             No details found in sale data
           </div>
-          
-          <v-table v-if="getSaleItems(selectedSale) && getSaleItems(selectedSale).length">
+
+          <v-table
+            v-if="
+              getSaleItems(selectedSale) && getSaleItems(selectedSale).length
+            "
+          >
             <thead>
               <tr>
                 <th>Nama Barang</th>
@@ -174,19 +181,25 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="detail in getSaleItems(selectedSale)" :key="detail.id || detail.name">
+              <tr
+                v-for="detail in getSaleItems(selectedSale)"
+                :key="detail.id || detail.name"
+              >
                 <td>{{ detail.name }}</td>
                 <td>{{ detail.quantity }}</td>
                 <td>{{ formatCurrency(detail.price) }}</td>
-                <td>{{ formatCurrency(detail.subtotal || (detail.quantity * detail.price)) }}</td>
+                <td>
+                  {{
+                    formatCurrency(
+                      detail.subtotal || detail.quantity * detail.price
+                    )
+                  }}
+                </td>
               </tr>
             </tbody>
           </v-table>
-          
-          <v-alert v-else 
-                   type="info" 
-                   variant="tonal" 
-                   class="mt-3">
+
+          <v-alert v-else type="info" variant="tonal" class="mt-3">
             Tidak ada detail item untuk penjualan ini
           </v-alert>
 
@@ -434,10 +447,10 @@ const employeeNames = computed(() => {
 });
 
 const showDetails = (sale) => {
-  console.log('Selected sale data:', sale);
-  console.log('Sale details:', sale.details);
-  console.log('Details type:', typeof sale.details);
-  console.log('Details items:', sale.details?.items);
+  console.log("Selected sale data:", sale);
+  console.log("Sale details:", sale.details);
+  console.log("Details type:", typeof sale.details);
+  console.log("Details items:", sale.details?.items);
   selectedSale.value = sale;
   detailDialog.value = true;
 };
@@ -445,7 +458,7 @@ const showDetails = (sale) => {
 // Helper function to get items from sale details
 const getSaleItems = (sale) => {
   if (!sale || !sale.details) return [];
-  
+
   // Handle different detail structures
   if (Array.isArray(sale.details)) {
     // Old structure: details is direct array
@@ -454,7 +467,7 @@ const getSaleItems = (sale) => {
     // New structure: details.items is array
     return sale.details.items;
   }
-  
+
   return [];
 };
 
