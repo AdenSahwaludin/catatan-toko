@@ -155,7 +155,16 @@
           <v-divider class="my-4" />
 
           <h3 class="mb-3">Item yang Dijual</h3>
-          <v-table v-if="selectedSale.details && selectedSale.details.length">
+          
+          <!-- Debug info -->
+          <div v-if="getSaleItems(selectedSale)" class="text-caption text-medium-emphasis mb-2">
+            Details found: {{ getSaleItems(selectedSale).length }} items
+          </div>
+          <div v-else class="text-caption text-medium-emphasis mb-2">
+            No details found in sale data
+          </div>
+          
+          <v-table v-if="getSaleItems(selectedSale) && getSaleItems(selectedSale).length">
             <thead>
               <tr>
                 <th>Nama Barang</th>
@@ -165,14 +174,21 @@
               </tr>
             </thead>
             <tbody>
-              <tr v-for="detail in selectedSale.details" :key="detail.name">
+              <tr v-for="detail in getSaleItems(selectedSale)" :key="detail.id || detail.name">
                 <td>{{ detail.name }}</td>
                 <td>{{ detail.quantity }}</td>
                 <td>{{ formatCurrency(detail.price) }}</td>
-                <td>{{ formatCurrency(detail.quantity * detail.price) }}</td>
+                <td>{{ formatCurrency(detail.subtotal || (detail.quantity * detail.price)) }}</td>
               </tr>
             </tbody>
           </v-table>
+          
+          <v-alert v-else 
+                   type="info" 
+                   variant="tonal" 
+                   class="mt-3">
+            Tidak ada detail item untuk penjualan ini
+          </v-alert>
 
           <!-- Edit Log -->
           <div
@@ -418,8 +434,28 @@ const employeeNames = computed(() => {
 });
 
 const showDetails = (sale) => {
+  console.log('Selected sale data:', sale);
+  console.log('Sale details:', sale.details);
+  console.log('Details type:', typeof sale.details);
+  console.log('Details items:', sale.details?.items);
   selectedSale.value = sale;
   detailDialog.value = true;
+};
+
+// Helper function to get items from sale details
+const getSaleItems = (sale) => {
+  if (!sale || !sale.details) return [];
+  
+  // Handle different detail structures
+  if (Array.isArray(sale.details)) {
+    // Old structure: details is direct array
+    return sale.details;
+  } else if (sale.details.items && Array.isArray(sale.details.items)) {
+    // New structure: details.items is array
+    return sale.details.items;
+  }
+  
+  return [];
 };
 
 const openEditDialog = (sale) => {
