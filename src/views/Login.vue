@@ -181,12 +181,34 @@ const handleLogin = async () => {
 <style scoped>
 .fill-height {
   min-height: 100vh;
-  background: 
-    radial-gradient(ellipse at top left, rgba(15, 15, 15, 0.9) 0%, transparent 50%),
-    radial-gradient(ellipse at top right, rgba(20, 20, 20, 0.8) 0%, transparent 50%),
-    radial-gradient(ellipse at bottom left, rgba(10, 10, 10, 0.9) 0%, transparent 50%),
-    radial-gradient(ellipse at bottom right, rgba(25, 25, 25, 0.8) 0%, transparent 50%),
-    linear-gradient(135deg, #0a0a0a 0%, #1a1a1a 25%, #0d0d0d 50%, #151515 75%, #000000 100%);
+  background: radial-gradient(
+      ellipse at top left,
+      rgba(15, 15, 15, 0.9) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      ellipse at top right,
+      rgba(20, 20, 20, 0.8) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      ellipse at bottom left,
+      rgba(10, 10, 10, 0.9) 0%,
+      transparent 50%
+    ),
+    radial-gradient(
+      ellipse at bottom right,
+      rgba(25, 25, 25, 0.8) 0%,
+      transparent 50%
+    ),
+    linear-gradient(
+      135deg,
+      #0a0a0a 0%,
+      #1a1a1a 25%,
+      #0d0d0d 50%,
+      #151515 75%,
+      #000000 100%
+    );
   position: relative;
   overflow: hidden;
 }
@@ -206,16 +228,17 @@ const handleLogin = async () => {
 .shape {
   position: absolute;
   border-radius: 50%;
-  background: linear-gradient(135deg, 
-    rgba(255, 255, 255, 0.08) 0%, 
-    rgba(255, 255, 255, 0.04) 50%, 
-    rgba(255, 255, 255, 0.02) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.08) 0%,
+    rgba(255, 255, 255, 0.04) 50%,
+    rgba(255, 255, 255, 0.02) 100%
+  );
   backdrop-filter: blur(50px) saturate(200%);
   -webkit-backdrop-filter: blur(50px) saturate(200%);
   animation: float 12s ease-in-out infinite;
   border: 2px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 
-    0 10px 30px rgba(0, 0, 0, 0.2),
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.2),
     inset 0 1px 2px rgba(255, 255, 255, 0.2);
 }
 
@@ -225,10 +248,12 @@ const handleLogin = async () => {
   top: 10%;
   left: 10%;
   animation-delay: 0s;
-  background: linear-gradient(135deg, 
-    rgba(45, 212, 191, 0.1) 0%, 
-    rgba(6, 182, 212, 0.05) 50%, 
-    rgba(59, 130, 246, 0.02) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(45, 212, 191, 0.1) 0%,
+    rgba(6, 182, 212, 0.05) 50%,
+    rgba(59, 130, 246, 0.02) 100%
+  );
 }
 
 .shape-2 {
@@ -237,10 +262,12 @@ const handleLogin = async () => {
   top: 60%;
   right: 10%;
   animation-delay: 4s;
-  background: linear-gradient(135deg, 
-    rgba(59, 130, 246, 0.1) 0%, 
-    rgba(147, 51, 234, 0.05) 50%, 
-    rgba(219, 39, 119, 0.02) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(59, 130, 246, 0.1) 0%,
+    rgba(147, 51, 234, 0.05) 50%,
+    rgba(219, 39, 119, 0.02) 100%
+  );
 }
 
 .shape-3 {
@@ -249,10 +276,12 @@ const handleLogin = async () => {
   top: 30%;
   right: 20%;
   animation-delay: 8s;
-  background: linear-gradient(135deg, 
-    rgba(147, 51, 234, 0.08) 0%, 
-    rgba(219, 39, 119, 0.04) 50%, 
-    rgba(239, 68, 68, 0.02) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(147, 51, 234, 0.08) 0%,
+    rgba(219, 39, 119, 0.04) 50%,
+    rgba(239, 68, 68, 0.02) 100%
+  );
 }
 
 .shape-4 {
@@ -261,14 +290,17 @@ const handleLogin = async () => {
   bottom: 20%;
   left: 15%;
   animation-delay: 2s;
-  background: linear-gradient(135deg, 
-    rgba(6, 182, 212, 0.09) 0%, 
-    rgba(45, 212, 191, 0.05) 50%, 
-    rgba(34, 197, 94, 0.02) 100%);
+  background: linear-gradient(
+    135deg,
+    rgba(6, 182, 212, 0.09) 0%,
+    rgba(45, 212, 191, 0.05) 50%,
+    rgba(34, 197, 94, 0.02) 100%
+  );
 }
 
 @keyframes float {
-  0%, 100% {
+  0%,
+  100% {
     transform: translateY(0px) rotate(0deg) scale(1);
     opacity: 0.3;
   }
@@ -288,16 +320,16 @@ const handleLogin = async () => {
 
 /* Login card dengan enhanced glassmorphism */
 .login-card {
-  background: linear-gradient(135deg, 
-    rgba(255, 255, 255, 0.12) 0%, 
-    rgba(255, 255, 255, 0.08) 50%, 
-    rgba(255, 255, 255, 0.05) 100%) !important;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.12) 0%,
+    rgba(255, 255, 255, 0.08) 50%,
+    rgba(255, 255, 255, 0.05) 100%
+  ) !important;
   backdrop-filter: blur(60px) saturate(200%) brightness(110%);
   -webkit-backdrop-filter: blur(60px) saturate(200%) brightness(110%);
   border: 1px solid rgba(255, 255, 255, 0.2);
-  box-shadow: 
-    0 35px 80px rgba(0, 0, 0, 0.6),
-    0 15px 35px rgba(0, 0, 0, 0.4),
+  box-shadow: 0 35px 80px rgba(0, 0, 0, 0.6), 0 15px 35px rgba(0, 0, 0, 0.4),
     inset 0 2px 4px rgba(255, 255, 255, 0.2),
     inset 0 -2px 4px rgba(0, 0, 0, 0.1);
   z-index: 1;
@@ -307,16 +339,18 @@ const handleLogin = async () => {
 }
 
 .login-card::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, 
-    transparent, 
-    rgba(255, 255, 255, 0.1), 
-    transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.1),
+    transparent
+  );
   transition: left 0.8s ease;
 }
 
@@ -326,41 +360,45 @@ const handleLogin = async () => {
 
 .login-card:hover {
   transform: translateY(-5px) scale(1.02);
-  background: linear-gradient(135deg, 
-    rgba(255, 255, 255, 0.15) 0%, 
-    rgba(255, 255, 255, 0.12) 50%, 
-    rgba(255, 255, 255, 0.08) 100%) !important;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.15) 0%,
+    rgba(255, 255, 255, 0.12) 50%,
+    rgba(255, 255, 255, 0.08) 100%
+  ) !important;
   border-color: rgba(255, 255, 255, 0.3);
-  box-shadow: 
-    0 50px 100px rgba(0, 0, 0, 0.7),
-    0 25px 50px rgba(0, 0, 0, 0.5),
+  box-shadow: 0 50px 100px rgba(0, 0, 0, 0.7), 0 25px 50px rgba(0, 0, 0, 0.5),
     inset 0 3px 6px rgba(255, 255, 255, 0.25),
     inset 0 -3px 6px rgba(0, 0, 0, 0.15);
 }
 
 /* Logo avatar dengan modern gradient */
 .logo-avatar {
-  background: linear-gradient(135deg, #2dd4bf 0%, #06b6d4 50%, #3b82f6 100%) !important;
-  box-shadow: 
-    0 15px 35px rgba(45, 212, 191, 0.3),
-    0 5px 15px rgba(0, 0, 0, 0.2),
+  background: linear-gradient(
+    135deg,
+    #2dd4bf 0%,
+    #06b6d4 50%,
+    #3b82f6 100%
+  ) !important;
+  box-shadow: 0 15px 35px rgba(45, 212, 191, 0.3), 0 5px 15px rgba(0, 0, 0, 0.2),
     inset 0 1px 0 rgba(255, 255, 255, 0.2);
   border: 2px solid rgba(255, 255, 255, 0.1);
 }
 
 /* Modern input styling dengan enhanced liquid glass effect */
 .modern-input :deep(.v-field) {
-  background: linear-gradient(135deg, 
-    rgba(255, 255, 255, 0.12) 0%, 
-    rgba(255, 255, 255, 0.08) 50%, 
-    rgba(255, 255, 255, 0.06) 100%) !important;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.12) 0%,
+    rgba(255, 255, 255, 0.08) 50%,
+    rgba(255, 255, 255, 0.06) 100%
+  ) !important;
   border: 1px solid rgba(255, 255, 255, 0.15);
   border-radius: 12px;
   backdrop-filter: blur(40px) saturate(180%) brightness(105%);
   -webkit-backdrop-filter: blur(40px) saturate(180%) brightness(105%);
   transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
-  box-shadow: 
-    0 8px 20px rgba(0, 0, 0, 0.2),
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.2),
     inset 0 2px 4px rgba(255, 255, 255, 0.15),
     inset 0 -1px 2px rgba(0, 0, 0, 0.1);
   position: relative;
@@ -368,16 +406,18 @@ const handleLogin = async () => {
 }
 
 .modern-input :deep(.v-field)::before {
-  content: '';
+  content: "";
   position: absolute;
   top: 0;
   left: -100%;
   width: 100%;
   height: 100%;
-  background: linear-gradient(90deg, 
-    transparent, 
-    rgba(255, 255, 255, 0.1), 
-    transparent);
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(255, 255, 255, 0.1),
+    transparent
+  );
   transition: left 0.6s ease;
   z-index: 1;
 }
@@ -387,29 +427,29 @@ const handleLogin = async () => {
 }
 
 .modern-input :deep(.v-field:hover) {
-  background: linear-gradient(135deg, 
-    rgba(255, 255, 255, 0.16) 0%, 
-    rgba(255, 255, 255, 0.12) 50%, 
-    rgba(255, 255, 255, 0.08) 100%) !important;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.16) 0%,
+    rgba(255, 255, 255, 0.12) 50%,
+    rgba(255, 255, 255, 0.08) 100%
+  ) !important;
   border-color: rgba(45, 212, 191, 0.4);
   transform: translateY(-2px) scale(1.01);
-  box-shadow: 
-    0 15px 35px rgba(0, 0, 0, 0.25),
-    0 5px 15px rgba(45, 212, 191, 0.1),
-    inset 0 3px 6px rgba(255, 255, 255, 0.2),
+  box-shadow: 0 15px 35px rgba(0, 0, 0, 0.25),
+    0 5px 15px rgba(45, 212, 191, 0.1), inset 0 3px 6px rgba(255, 255, 255, 0.2),
     inset 0 -2px 4px rgba(0, 0, 0, 0.1);
 }
 
 .modern-input :deep(.v-field--focused) {
-  background: linear-gradient(135deg, 
-    rgba(255, 255, 255, 0.18) 0%, 
-    rgba(255, 255, 255, 0.14) 50%, 
-    rgba(255, 255, 255, 0.10) 100%) !important;
+  background: linear-gradient(
+    135deg,
+    rgba(255, 255, 255, 0.18) 0%,
+    rgba(255, 255, 255, 0.14) 50%,
+    rgba(255, 255, 255, 0.1) 100%
+  ) !important;
   border-color: rgba(45, 212, 191, 0.6);
   transform: scale(1.02);
-  box-shadow: 
-    0 0 0 3px rgba(45, 212, 191, 0.15),
-    0 20px 40px rgba(0, 0, 0, 0.3),
+  box-shadow: 0 0 0 3px rgba(45, 212, 191, 0.15), 0 20px 40px rgba(0, 0, 0, 0.3),
     0 8px 20px rgba(45, 212, 191, 0.2),
     inset 0 3px 6px rgba(255, 255, 255, 0.25),
     inset 0 -2px 4px rgba(0, 0, 0, 0.1);
@@ -433,24 +473,32 @@ const handleLogin = async () => {
 
 /* Modern buttons dengan liquid glass effect */
 .primary-button {
-  background: linear-gradient(135deg, #2dd4bf 0%, #06b6d4 50%, #3b82f6 100%) !important;
+  background: linear-gradient(
+    135deg,
+    #2dd4bf 0%,
+    #06b6d4 50%,
+    #3b82f6 100%
+  ) !important;
   color: white !important;
   font-weight: 600;
   letter-spacing: 0.5px;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   text-transform: none;
   border: 1px solid rgba(255, 255, 255, 0.1);
-  box-shadow: 
-    0 8px 25px rgba(45, 212, 191, 0.25),
+  box-shadow: 0 8px 25px rgba(45, 212, 191, 0.25),
     inset 0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
 .primary-button:hover {
   transform: translateY(-3px);
-  box-shadow: 
-    0 15px 40px rgba(45, 212, 191, 0.4),
+  box-shadow: 0 15px 40px rgba(45, 212, 191, 0.4),
     inset 0 1px 0 rgba(255, 255, 255, 0.3);
-  background: linear-gradient(135deg, #34d399 0%, #0ea5e9 50%, #6366f1 100%) !important;
+  background: linear-gradient(
+    135deg,
+    #34d399 0%,
+    #0ea5e9 50%,
+    #6366f1 100%
+  ) !important;
 }
 
 .secondary-button {
@@ -466,8 +514,7 @@ const handleLogin = async () => {
 .secondary-button:hover {
   background: rgba(255, 255, 255, 0.12);
   transform: translateY(-2px);
-  box-shadow: 
-    0 8px 25px rgba(0, 0, 0, 0.2),
+  box-shadow: 0 8px 25px rgba(0, 0, 0, 0.2),
     inset 0 1px 0 rgba(255, 255, 255, 0.15);
 }
 
@@ -519,7 +566,7 @@ const handleLogin = async () => {
   .login-card {
     backdrop-filter: blur(30px) saturate(150%);
   }
-  
+
   .modern-input :deep(.v-field) {
     backdrop-filter: blur(15px) saturate(150%);
   }
