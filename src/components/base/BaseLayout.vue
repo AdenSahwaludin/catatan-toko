@@ -345,8 +345,14 @@ const initializeDrawerState = () => {
     drawer.value = false;
     rail.value = false;
   } else {
-    drawer.value = true;
-    rail.value = false;
+    // For admin on desktop, start with drawer open but in rail mode
+    if (props.role === 'admin') {
+      drawer.value = true;
+      rail.value = true; // Start in rail mode (closed)
+    } else {
+      drawer.value = true;
+      rail.value = false;
+    }
   }
 };
 
