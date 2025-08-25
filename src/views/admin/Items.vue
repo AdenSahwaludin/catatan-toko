@@ -8,6 +8,7 @@
       :badge="filteredItems.length"
       badge-color="success"
       class="mb-4"
+      style="display: flex; flex-wrap: wrap; width: auto"
     >
       <template #actions>
         <div class="d-flex ga-2 align-center">

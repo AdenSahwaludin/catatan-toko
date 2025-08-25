@@ -11,11 +11,12 @@
       :width="isMobile ? 280 : 256"
     >
       <!-- Brand section -->
-      <div class="brand-section pa-4">
+      <div class="brand-section">
         <v-avatar
           :size="rail ? 40 : 50"
           :class="brandAvatarClasses"
           class="mb-2"
+          style="margin-left: -8px"
         >
           <v-icon :size="rail ? 20 : 25" color="white">
             {{ brandIcon }}
@@ -347,7 +348,7 @@ const initializeDrawerState = () => {
     rail.value = false;
   } else {
     // For admin on desktop, start with drawer open but in rail mode
-    if (props.role === 'admin') {
+    if (props.role === "admin") {
       drawer.value = true;
       rail.value = true; // Start in rail mode (closed)
     } else {
@@ -625,5 +626,20 @@ watch(isMobile, (newVal) => {
 /* Cursor pointer for clickable elements */
 .cursor-pointer {
   cursor: pointer;
+}
+/* Adjust icon positioning in rail mode */
+.v-navigation-drawer--rail .nav-item {
+  padding-left: 4px !important;
+}
+
+/* Active indicator as perfect circle in rail mode */
+.v-navigation-drawer--rail .navigation-list .v-list-item--active.nav-item {
+  margin: 8px auto !important;
+}
+.v-navigation-drawer--rail
+  .navigation-list
+  .v-list-item--active.nav-item
+  .v-list-item__prepend-icon {
+  color: var(--v-theme-primary) !important;
 }
 </style>
