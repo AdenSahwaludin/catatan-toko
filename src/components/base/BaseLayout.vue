@@ -41,13 +41,14 @@
         <v-list-item
           v-for="item in menuItems"
           :key="item.title"
-          :value="item.title"
+          :value="item.to"
           :to="item.to"
           :prepend-icon="item.icon"
           :title="item.title"
           :subtitle="rail ? undefined : item.subtitle"
           class="nav-item"
           rounded="xl"
+          exact
         >
           <template #append v-if="!rail && item.badge">
             <v-chip
