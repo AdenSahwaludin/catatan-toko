@@ -15,8 +15,8 @@
         <v-avatar
           :size="rail ? 40 : 50"
           :class="brandAvatarClasses"
-          class="mb-2"
-          style="margin-left: -8px"
+          style="margin-left: -0.5rem"
+          class="sm:mx-0"
         >
           <v-icon :size="rail ? 20 : 25" color="white">
             {{ brandIcon }}

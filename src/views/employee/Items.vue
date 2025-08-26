@@ -533,11 +533,17 @@ const filteredItems = computed(() => {
       .filter((keyword) => keyword.length > 0);
 
     items = items.filter((item) => {
+      // First check exact barcode match (for fast barcode lookup)
+      if (item.barcode && item.barcode === debouncedSearch.value) {
+        return true;
+      }
+
       // Create searchable text from all relevant fields
       const searchableText = [
         item.name,
         item.brand,
         item.model || "",
+        item.barcode || "",
         item.categories?.name || "",
       ]
         .join(" ")

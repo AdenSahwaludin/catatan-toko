@@ -199,7 +199,7 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from "vue";
+import { ref, computed, onMounted, watch } from "vue";
 import { useDataStore } from "@/stores/data";
 import {
   formatCurrency,
@@ -451,5 +451,17 @@ onMounted(async () => {
   } catch (error) {
     console.error("Error loading employees:", error);
   }
+
+  // Generate initial report
+  await generateReport();
 });
+
+// Regenerate report when filters change
+watch(
+  filters,
+  () => {
+    generateReport();
+  },
+  { deep: true }
+);
 </script>

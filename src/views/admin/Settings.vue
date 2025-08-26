@@ -256,8 +256,12 @@
                 </li>
                 <li><code>merek</code> - Merek barang (opsional)</li>
                 <li><code>model</code> - Model barang (opsional)</li>
+                <li><code>barcode</code> - Barcode barang (opsional)</li>
                 <li><code>harga</code> - Harga dalam angka (wajib)</li>
-                <li><code>stok</code> - Jumlah stok dalam angka (wajib)</li>
+                <li>
+                  <code>stok</code> - Jumlah stok dalam angka (opsional, default
+                  100)
+                </li>
               </ul>
 
               <div class="d-flex align-center mt-3">
@@ -424,6 +428,7 @@ const previewHeaders = [
   { title: "Kategori", key: "kategori" },
   { title: "Merek", key: "merek" },
   { title: "Model", key: "model" },
+  { title: "Barcode", key: "barcode" },
   { title: "Harga", key: "harga" },
   { title: "Stok", key: "stok" },
 ];
@@ -576,16 +581,17 @@ const validateJsonData = () => {
         );
       }
 
-      if (
-        item.stok === undefined ||
-        typeof item.stok !== "number" ||
-        item.stok < 0
-      ) {
-        itemErrors.push(
-          `Item ${index + 1}: 'stok' wajib diisi dan harus berupa angka >= 0`
-        );
+      // Optional stok: default to 100 if missing, else validate
+      if (item.stok === undefined) {
+        item.stok = 100;
+      } else if (typeof item.stok !== "number" || item.stok < 0) {
+        itemErrors.push(`Item ${index + 1}: 'stok' harus berupa angka >= 0`);
       }
 
+      // Optional barcode: validate type if provided
+      if (item.barcode !== undefined && typeof item.barcode !== "string") {
+        itemErrors.push(`Item ${index + 1}: 'barcode' harus berupa teks`);
+      }
       if (itemErrors.length > 0) {
         errors.push(...itemErrors);
       } else {
@@ -595,6 +601,7 @@ const validateJsonData = () => {
           kategori: item.kategori.trim(),
           merek: item.merek || "",
           model: item.model || "",
+          barcode: item.barcode || "",
           harga: item.harga,
           stok: item.stok,
         });
@@ -806,14 +813,15 @@ const exampleJsonData = `[
     "kategori": "Vanbelt",
     "merek": "Gates",
     "model": "21",
-    "harga": 22000,
-    "stok": 100
+    "barcode": "1234567890123",
+    "harga": 22000
   },
   {
     "nama": "Vanbelt A 22",
     "kategori": "Vanbelt",
     "merek": "Gates",
     "model": "22",
+    "barcode": "1234567890124",
     "harga": 23000,
     "stok": 100
   },
@@ -822,6 +830,7 @@ const exampleJsonData = `[
     "kategori": "Bearing",
     "merek": "SKF",
     "model": "6200",
+    "barcode": "0987654321098",
     "harga": 15000,
     "stok": 50
   },
@@ -830,6 +839,7 @@ const exampleJsonData = `[
     "kategori": "Oli",
     "merek": "Shell",
     "model": "SAE 40",
+    "barcode": "1122334455667",
     "harga": 45000,
     "stok": 25
   }

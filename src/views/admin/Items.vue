@@ -8,13 +8,14 @@
       :badge="filteredItems.length"
       badge-color="success"
       class="mb-4"
-      style="display: flex; flex-wrap: wrap; width: auto"
+      style="display: flex; flex-wrap: wrap; justify-content: space-between"
     >
       <template #actions>
-        <div class="d-flex ga-2 align-center">
+        <div class="d-flex ga-2 align-center justify-center">
           <!-- Desktop: Button dengan text -->
           <v-btn
             color="primary"
+            size="small"
             prepend-icon="mdi-plus"
             @click="openDialog()"
             class="d-none d-sm-flex"
@@ -34,6 +35,7 @@
           <!-- QR Scanner button untuk menambah barang -->
           <v-btn
             color="secondary"
+            size="small"
             variant="outlined"
             prepend-icon="mdi-qrcode-scan"
             @click="openQRScannerForAdd"
@@ -69,7 +71,7 @@
       :items-per-page="itemsPerPage"
       :show-barcode-scanner="true"
       search-label="Cari barang..."
-      search-placeholder="Nama, barcode, merek, atau model"
+      search-placeholder="Cari berdasarkan nama, barcode dan merek"
       :default-actions="tableActions"
       empty-title="Belum Ada Barang"
       empty-text="Mulai tambahkan barang pertama Anda"
@@ -88,16 +90,6 @@
       <!-- Custom filters slot -->
       <template #filters>
         <v-row>
-          <v-col cols="12" md="3">
-            <v-text-field
-              v-model="brandFilter"
-              label="Merek"
-              variant="outlined"
-              density="compact"
-              clearable
-              hide-details
-            />
-          </v-col>
           <v-col cols="12" md="3" v-if="!settingsStore.isStockHidden">
             <v-switch
               v-model="showLowStock"
@@ -407,14 +399,40 @@ const filteredItems = computed(() => {
   let items = [...dataStore.items];
 
   if (debouncedSearch.value) {
-    const query = debouncedSearch.value.toLowerCase();
-    items = items.filter(
-      (item) =>
-        item.name.toLowerCase().includes(query) ||
-        item.brand.toLowerCase().includes(query) ||
-        item.model?.toLowerCase().includes(query) ||
-        item.barcode?.includes(query)
-    );
+    const searchKeywords = debouncedSearch.value
+      .toLowerCase()
+      .split(" ")
+      .filter((keyword) => keyword.length > 0);
+
+    items = items.filter((item) => {
+      // First check exact barcode match (for fast barcode lookup)
+      if (item.barcode && item.barcode === debouncedSearch.value) {
+        return true;
+      }
+
+      // Create searchable text from all relevant fields
+      const searchableText = [
+        item.name,
+        item.brand,
+        item.model || "",
+        item.barcode || "",
+        item.categories?.name || "",
+      ]
+        .join(" ")
+        .toLowerCase();
+
+      // Check if ALL keywords are found in the searchable text
+      // Also check for partial matches (minimum 3 characters)
+      return searchKeywords.every((keyword) => {
+        if (keyword.length >= 3) {
+          return searchableText.includes(keyword);
+        } else {
+          // For short keywords, require exact word match
+          const words = searchableText.split(" ");
+          return words.some((word) => word.includes(keyword));
+        }
+      });
+    });
   }
 
   if (selectedCategory.value) {
