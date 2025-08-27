@@ -497,10 +497,10 @@
 
       <!-- Cart -->
       <v-card id="cart-section" class="mb-4">
-        <v-card-title class="d-flex align-center justify-space-between">
+        <v-card-title class="d-flex align-center justify-space-between md-">
           <span>Keranjang Penjualan</span>
-          <div class="d-flex align-center gap-2">
-            <v-chip color="primary" v-if="cart.length">
+          <div class="d-flex align-center" ">
+            <v-chip class="ml-4" color="primary" v-if="cart.length">
               {{ cart.length }} item
             </v-chip>
             <v-btn

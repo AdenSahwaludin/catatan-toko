@@ -598,10 +598,16 @@ const saveItem = async () => {
         .eq("id", editingItem.value.id);
 
       if (error) throw error;
+      
+      // Invalidate cache after edit
+      dataStore.invalidateCache('items');
     } else {
       const { error } = await supabase.from("items").insert([itemData]);
 
       if (error) throw error;
+      
+      // Invalidate cache after create
+      dataStore.invalidateCache('items');
     }
 
     await dataStore.fetchItems();
@@ -630,6 +636,9 @@ const deleteItem = async () => {
 
     if (error) throw error;
 
+    // Invalidate cache after delete
+    dataStore.invalidateCache('items');
+    
     await dataStore.fetchItems();
     deleteDialog.value = false;
     itemToDelete.value = null;

@@ -10,31 +10,32 @@ export const useDataStore = defineStore("data", () => {
   const users = ref([]); // Added for all users (admin + employee)
   const loading = ref(false);
 
-  // Cache untuk menghindari fetch berulang
-  const lastFetchTimes = ref({
-    items: null,
-    categories: null,
-    sales: null,
-    users: null,
-    employees: null,
+  // Cache status untuk mendeteksi apakah data sudah dimuat
+  const cacheStatus = ref({
+    items: false,
+    categories: false,
+    sales: false,
+    employees: false,
+    users: false,
   });
 
-  // Cache duration dalam milidetik (5 menit)
-  const CACHE_DURATION = 5 * 60 * 1000;
-
-  // Helper function untuk cek apakah cache masih valid
-  const isCacheValid = (key) => {
-    const lastFetch = lastFetchTimes.value[key];
-    if (!lastFetch) return false;
-    return Date.now() - lastFetch < CACHE_DURATION;
+  // Cache invalidation - untuk memaksa fetch ulang setelah operasi CRUD
+  const invalidateCache = (type) => {
+    if (type) {
+      cacheStatus.value[type] = false;
+      console.log(`Cache invalidated for: ${type}`);
+    } else {
+      // Invalidate all cache
+      Object.keys(cacheStatus.value).forEach(key => {
+        cacheStatus.value[key] = false;
+      });
+      console.log("All cache invalidated");
+    }
   };
 
   const fetchCategories = async (forceRefresh = false) => {
-    if (
-      !forceRefresh &&
-      isCacheValid("categories") &&
-      categories.value.length > 0
-    ) {
+    // Jika cache masih valid dan tidak ada force refresh, gunakan cache
+    if (!forceRefresh && cacheStatus.value.categories && categories.value.length > 0) {
       console.log("Using cached categories data");
       return;
     }
@@ -42,7 +43,8 @@ export const useDataStore = defineStore("data", () => {
     try {
       loading.value = true;
       categories.value = await getCategories();
-      lastFetchTimes.value.categories = Date.now();
+      cacheStatus.value.categories = true;
+      console.log("Categories data fetched from database");
     } catch (error) {
       console.error("Error fetching categories:", error);
     } finally {
@@ -53,13 +55,9 @@ export const useDataStore = defineStore("data", () => {
   const fetchItems = async (filters = {}, forceRefresh = false) => {
     // Jika ada filter, selalu fetch ulang
     const hasFilters = Object.keys(filters).length > 0;
-
-    if (
-      !forceRefresh &&
-      !hasFilters &&
-      isCacheValid("items") &&
-      items.value.length > 0
-    ) {
+    
+    // Jika cache masih valid dan tidak ada force refresh atau filter, gunakan cache
+    if (!forceRefresh && !hasFilters && cacheStatus.value.items && items.value.length > 0) {
       console.log("Using cached items data");
       return;
     }
@@ -75,9 +73,12 @@ export const useDataStore = defineStore("data", () => {
         stock: Number(item.stock) || 0,
       }));
 
+      // Update cache status hanya jika tidak ada filter
       if (!hasFilters) {
-        lastFetchTimes.value.items = Date.now();
+        cacheStatus.value.items = true;
       }
+      
+      console.log("Items data fetched from database");
     } catch (error) {
       console.error("Error fetching items:", error);
     } finally {
@@ -88,13 +89,9 @@ export const useDataStore = defineStore("data", () => {
   const fetchSales = async (filters = {}, forceRefresh = false) => {
     // Jika ada filter, selalu fetch ulang
     const hasFilters = Object.keys(filters).length > 0;
-
-    if (
-      !forceRefresh &&
-      !hasFilters &&
-      isCacheValid("sales") &&
-      sales.value.length > 0
-    ) {
+    
+    // Jika cache masih valid dan tidak ada force refresh atau filter, gunakan cache
+    if (!forceRefresh && !hasFilters && cacheStatus.value.sales && sales.value.length > 0) {
       console.log("Using cached sales data");
       return;
     }
@@ -102,10 +99,13 @@ export const useDataStore = defineStore("data", () => {
     try {
       loading.value = true;
       sales.value = await getSales(filters);
-
+      
+      // Update cache status hanya jika tidak ada filter
       if (!hasFilters) {
-        lastFetchTimes.value.sales = Date.now();
+        cacheStatus.value.sales = true;
       }
+      
+      console.log("Sales data fetched from database");
     } catch (error) {
       console.error("Error fetching sales:", error);
     } finally {
@@ -114,11 +114,8 @@ export const useDataStore = defineStore("data", () => {
   };
 
   const fetchEmployees = async (forceRefresh = false) => {
-    if (
-      !forceRefresh &&
-      isCacheValid("employees") &&
-      employees.value.length > 0
-    ) {
+    // Jika cache masih valid dan tidak ada force refresh, gunakan cache
+    if (!forceRefresh && cacheStatus.value.employees && employees.value.length > 0) {
       console.log("Using cached employees data");
       return;
     }
@@ -126,7 +123,8 @@ export const useDataStore = defineStore("data", () => {
     try {
       loading.value = true;
       employees.value = await getUsers("employee");
-      lastFetchTimes.value.employees = Date.now();
+      cacheStatus.value.employees = true;
+      console.log("Employees data fetched from database");
     } catch (error) {
       console.error("Error fetching employees:", error);
     } finally {
@@ -135,7 +133,8 @@ export const useDataStore = defineStore("data", () => {
   };
 
   const fetchUsers = async (forceRefresh = false) => {
-    if (!forceRefresh && isCacheValid("users") && users.value.length > 0) {
+    // Jika cache masih valid dan tidak ada force refresh, gunakan cache
+    if (!forceRefresh && cacheStatus.value.users && users.value.length > 0) {
       console.log("Using cached users data");
       return;
     }
@@ -143,7 +142,8 @@ export const useDataStore = defineStore("data", () => {
     try {
       loading.value = true;
       users.value = await getUsers(); // Get all users
-      lastFetchTimes.value.users = Date.now();
+      cacheStatus.value.users = true;
+      console.log("Users data fetched from database");
     } catch (error) {
       console.error("Error fetching users:", error);
     } finally {
@@ -220,5 +220,6 @@ export const useDataStore = defineStore("data", () => {
     fetchUsers,
     fetchInitialData,
     refreshAllData,
+    invalidateCache,
   };
 });

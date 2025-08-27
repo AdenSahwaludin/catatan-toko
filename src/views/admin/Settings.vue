@@ -109,25 +109,38 @@
               prepend-icon="mdi-download"
               block
             >
-              Export Semua Data
+              Export Data ke CSV
             </v-btn>
             <div class="text-caption text-medium-emphasis mt-2">
-              Download backup semua data dalam format Excel
+              Download data barang dalam format CSV dengan kolom: nama,
+              kategori, merek, model, harga, stok, barcode
             </div>
           </v-col>
 
           <v-col cols="12" md="6">
             <v-file-input
               v-model="importFile"
-              label="Import Data dari File"
-              accept=".xlsx,.csv"
+              label="Pilih File CSV untuk Import"
+              accept=".csv"
               variant="outlined"
               prepend-icon="mdi-upload"
-              @change="handleFileImport"
+              @change="onFileSelected"
             />
             <div class="text-caption text-medium-emphasis">
-              Restore data dari file backup Excel/CSV
+              Pilih file CSV untuk import data barang. Field wajib: nama,
+              kategori, harga. Stok default 100 jika kosong.
             </div>
+            <v-btn
+              color="primary"
+              @click="handleFileImport"
+              :loading="importing"
+              prepend-icon="mdi-import"
+              :disabled="!importFile || (Array.isArray(importFile) ? importFile.length === 0 : !importFile)"
+              class="mt-2"
+              block
+            >
+              Import Data CSV
+            </v-btn>
           </v-col>
         </v-row>
       </v-card-text>
@@ -470,62 +483,345 @@ const exportAllData = async () => {
   exporting.value = true;
 
   try {
-    // Prepare data for export
-    const exportData = {
-      categories: dataStore.categories,
-      items: dataStore.items,
-      sales: dataStore.sales,
-      employees: dataStore.employees,
-    };
-
-    // Create separate sheets for each data type
-    const workbook = XLSX.utils.book_new();
-
-    // Categories sheet
-    const categoriesWS = XLSX.utils.json_to_sheet(dataStore.categories);
-    XLSX.utils.book_append_sheet(workbook, categoriesWS, "Kategori");
-
-    // Items sheet
-    const itemsData = dataStore.items.map((item) => ({
-      Nama: item.name,
-      Kategori: item.categories?.name,
-      Merek: item.brand,
-      Model: item.model,
-      Harga: item.price,
-      Stok: item.stock,
+    // Prepare CSV data for items with specified columns
+    const csvData = dataStore.items.map((item) => ({
+      nama: item.name,
+      kategori: item.categories?.name || "",
+      merek: item.brand || "",
+      model: item.model || "",
+      harga: item.price,
+      stok: item.stock,
+      barcode: item.barcode || "",
     }));
-    const itemsWS = XLSX.utils.json_to_sheet(itemsData);
-    XLSX.utils.book_append_sheet(workbook, itemsWS, "Barang");
 
-    // Sales sheet
-    const salesData = dataStore.sales.map((sale) => ({
-      Karyawan: sale.users?.email,
-      Total: sale.total,
-      Tanggal: new Date(sale.created_at).toLocaleDateString("id-ID"),
-      Status: sale.is_deleted ? "Dihapus" : "Aktif",
-    }));
-    const salesWS = XLSX.utils.json_to_sheet(salesData);
-    XLSX.utils.book_append_sheet(workbook, salesWS, "Penjualan");
+    // Create CSV headers
+    const headers = [
+      "nama",
+      "kategori",
+      "merek",
+      "model",
+      "harga",
+      "stok",
+      "barcode",
+    ];
 
-    // Export file
-    XLSX.writeFile(
-      workbook,
-      `backup-catatan-toko-${new Date().toISOString().split("T")[0]}.xlsx`
+    // Convert to CSV format
+    const csvContent = [
+      headers.join(","), // Header row
+      ...csvData.map((row) =>
+        headers
+          .map((header) => {
+            const value = row[header];
+            // Escape values that contain commas or quotes
+            if (
+              typeof value === "string" &&
+              (value.includes(",") || value.includes('"'))
+            ) {
+              return `"${value.replace(/"/g, '""')}"`;
+            }
+            return value;
+          })
+          .join(",")
+      ),
+    ].join("\n");
+
+    // Create and download CSV file
+    const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });
+    const link = document.createElement("a");
+    const url = URL.createObjectURL(blob);
+    link.setAttribute("href", url);
+    link.setAttribute(
+      "download",
+      `data-barang-${new Date().toISOString().split("T")[0]}.csv`
     );
+    link.style.visibility = "hidden";
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+
+    notificationStore.addNotification({
+      type: "success",
+      message: `Berhasil export ${csvData.length} data barang ke CSV`,
+    });
   } catch (error) {
     console.error("Error exporting data:", error);
-    alert("Terjadi kesalahan saat export data");
+    notificationStore.addNotification({
+      type: "error",
+      message: "Terjadi kesalahan saat export data",
+    });
   } finally {
     exporting.value = false;
   }
 };
 
-const handleFileImport = (event) => {
-  // This would handle file import in a real application
-  notificationStore.addNotification({
-    type: "info",
-    message: "Fitur import file akan tersedia di versi mendatang",
-  });
+const onFileSelected = (event) => {
+  // Just handle file selection, don't auto-import
+  // File is already stored in importFile.value by v-model
+  console.log("File selected:", importFile.value);
+};
+
+const handleFileImport = async () => {
+  // Check different ways the file might be stored
+  let file = null;
+  
+  if (importFile.value) {
+    if (Array.isArray(importFile.value)) {
+      file = importFile.value[0];
+    } else {
+      file = importFile.value;
+    }
+  }
+  
+  console.log("Import file value:", importFile.value);
+  console.log("Selected file:", file);
+  
+  if (!file) {
+    notificationStore.addNotification({
+      type: "warning",
+      message: "Pilih file CSV terlebih dahulu",
+    });
+    return;
+  }
+
+  importing.value = true;
+
+  try {
+    const fileExtension = file.name.split(".").pop().toLowerCase();
+
+    if (fileExtension === "csv") {
+      // Handle CSV import
+      const text = await file.text();
+      const lines = text.split("\n").filter((line) => line.trim());
+
+      if (lines.length < 2) {
+        throw new Error(
+          "File CSV harus memiliki header dan minimal 1 baris data"
+        );
+      }
+
+      // Parse header
+      const headers = lines[0].split(",").map((h) => h.trim().toLowerCase());
+      const requiredHeaders = ["nama", "kategori", "harga"];
+      const missingHeaders = requiredHeaders.filter(
+        (h) => !headers.includes(h)
+      );
+
+      if (missingHeaders.length > 0) {
+        throw new Error(`Header yang wajib ada: ${missingHeaders.join(", ")}`);
+      }
+
+      // Parse data rows
+      const csvData = [];
+      const errors = [];
+
+      for (let i = 1; i < lines.length; i++) {
+        const values = lines[i]
+          .split(",")
+          .map((v) => v.trim().replace(/^"|"$/g, ""));
+        const row = {};
+
+        headers.forEach((header, index) => {
+          row[header] = values[index] || "";
+        });
+
+        // Validate required fields
+        const rowErrors = [];
+        if (!row.nama || row.nama.trim() === "") {
+          rowErrors.push(`Baris ${i}: Nama barang wajib diisi`);
+        }
+        if (!row.kategori || row.kategori.trim() === "") {
+          rowErrors.push(`Baris ${i}: Kategori wajib diisi`);
+        }
+        if (!row.harga || isNaN(Number(row.harga)) || Number(row.harga) <= 0) {
+          rowErrors.push(`Baris ${i}: Harga harus berupa angka positif`);
+        }
+
+        if (rowErrors.length > 0) {
+          errors.push(...rowErrors);
+        } else {
+          // Create validated item
+          csvData.push({
+            nama: row.nama.trim(),
+            kategori: row.kategori.trim(),
+            merek: row.merek || "",
+            model: row.model || "",
+            barcode: row.barcode || "",
+            harga: Number(row.harga),
+            stok: row.stok && !isNaN(Number(row.stok)) ? Number(row.stok) : 100, // Default to 100
+          });
+        }
+      }
+
+      if (errors.length > 0) {
+        throw new Error(
+          `Ditemukan ${errors.length} error:\n${errors.slice(0, 5).join("\n")}${
+            errors.length > 5
+              ? "\n... dan " + (errors.length - 5) + " error lainnya"
+              : ""
+          }`
+        );
+      }
+
+      if (csvData.length === 0) {
+        throw new Error("Tidak ada data valid untuk diimport");
+      }
+
+      // Process import similar to JSON import
+      await Promise.all([dataStore.fetchCategories(), dataStore.fetchItems()]);
+
+      const existingCategories = new Map(
+        dataStore.categories.map((cat) => [cat.name.toLowerCase(), cat])
+      );
+
+      const existingItems = new Set(
+        dataStore.items.map((item) => item.name.toLowerCase())
+      );
+
+      // Track new categories to create
+      const newCategories = new Set();
+      const categoriesToCreate = [];
+
+      // Check for duplicates and prepare data
+      const duplicateItems = [];
+      const validItems = [];
+
+      csvData.forEach((item) => {
+        // Check for duplicate item names
+        if (existingItems.has(item.nama.toLowerCase())) {
+          duplicateItems.push(item.nama);
+        } else {
+          validItems.push(item);
+          // Track category
+          const categoryName = item.kategori.toLowerCase();
+          if (
+            !existingCategories.has(categoryName) &&
+            !newCategories.has(categoryName)
+          ) {
+            newCategories.add(categoryName);
+            categoriesToCreate.push({
+              name: item.kategori,
+            });
+          }
+        }
+      });
+
+      // Show duplicate warning if any
+      if (duplicateItems.length > 0) {
+        const shouldContinue = confirm(
+          `Ditemukan ${
+            duplicateItems.length
+          } barang dengan nama yang sudah ada:\n\n${duplicateItems
+            .slice(0, 5)
+            .join("\n")}${
+            duplicateItems.length > 5
+              ? "\n... dan " + (duplicateItems.length - 5) + " lainnya"
+              : ""
+          }\n\nBarang duplikat akan dilewati. Lanjutkan import?`
+        );
+
+        if (!shouldContinue) {
+          importing.value = false;
+          return;
+        }
+      }
+
+      if (validItems.length === 0) {
+        notificationStore.addNotification({
+          type: "warning",
+          message: "Semua barang sudah ada. Tidak ada yang diimport.",
+        });
+        importing.value = false;
+        return;
+      }
+
+      // Create new categories
+      const categoryMap = new Map(existingCategories);
+      for (const categoryData of categoriesToCreate) {
+        try {
+          const newCategory = await createCategory(categoryData);
+          categoryMap.set(categoryData.name.toLowerCase(), newCategory);
+        } catch (error) {
+          console.error("Error creating category:", categoryData.name, error);
+          throw error;
+        }
+      }
+
+      // Create items
+      let successCount = 0;
+      let errorCount = 0;
+      const createErrors = [];
+
+      for (const item of validItems) {
+        try {
+          const category = categoryMap.get(item.kategori.toLowerCase());
+          if (!category) {
+            throw new Error(`Kategori "${item.kategori}" tidak ditemukan`);
+          }
+
+          const itemData = {
+            name: item.nama,
+            category_id: category.id,
+            brand: item.merek || "",
+            model: item.model || "",
+            barcode: item.barcode || "",
+            price: item.harga,
+            stock: item.stok,
+          };
+
+          await createItem(itemData);
+          successCount++;
+        } catch (error) {
+          errorCount++;
+          createErrors.push(`${item.nama}: ${error.message}`);
+          console.error("Error creating item:", item.nama, error);
+        }
+      }
+
+      // Refresh data
+      await Promise.all([dataStore.fetchCategories(), dataStore.fetchItems()]);
+
+      // Show results
+      let resultMessage = "";
+      if (successCount > 0) {
+        resultMessage = `Berhasil import ${successCount} item dari CSV`;
+        if (newCategories.size > 0) {
+          resultMessage += ` dan ${newCategories.size} kategori baru`;
+        }
+        if (duplicateItems.length > 0) {
+          resultMessage += ` (${duplicateItems.length} duplikat dilewati)`;
+        }
+
+        notificationStore.addNotification({
+          type: "success",
+          message: resultMessage,
+        });
+      }
+
+      if (errorCount > 0) {
+        notificationStore.addNotification({
+          type: "warning",
+          message: `${errorCount} item gagal diimport. Periksa console untuk detail.`,
+        });
+        console.warn("Import errors:", createErrors);
+      }
+
+      // Clear file input
+      importFile.value = null;
+    } else {
+      notificationStore.addNotification({
+        type: "error",
+        message: "Format file tidak didukung. Gunakan file CSV.",
+      });
+    }
+  } catch (error) {
+    console.error("Error importing file:", error);
+    notificationStore.addNotification({
+      type: "error",
+      message: `Gagal import file: ${error.message}`,
+    });
+  } finally {
+    importing.value = false;
+  }
 };
 
 const validateJsonData = () => {

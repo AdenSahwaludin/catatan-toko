@@ -13,6 +13,17 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   },
 });
 
+// Helper function to invalidate cache after CRUD operations
+const invalidateDataCache = (type) => {
+  // Import dinamis untuk menghindari circular dependency
+  import('@/stores/data.js').then(({ useDataStore }) => {
+    const dataStore = useDataStore();
+    dataStore.invalidateCache(type);
+  }).catch(err => {
+    console.warn('Could not invalidate cache:', err);
+  });
+};
+
 // Database helper functions
 export const getCategories = async () => {
   const { data, error } = await supabase
@@ -146,6 +157,11 @@ export const createSale = async (saleData) => {
   }
 
   console.log("Sale created successfully:", data[0]);
+  
+  // Invalidate sales and items cache
+  invalidateDataCache('sales');
+  invalidateDataCache('items'); // Items cache juga karena stok berubah
+  
   return data[0];
 };
 
@@ -156,6 +172,10 @@ export const createCategory = async (categoryData) => {
     .select();
 
   if (error) throw error;
+  
+  // Invalidate categories cache
+  invalidateDataCache('categories');
+  
   return data[0];
 };
 
@@ -166,6 +186,10 @@ export const createItem = async (itemData) => {
     .select();
 
   if (error) throw error;
+  
+  // Invalidate items cache
+  invalidateDataCache('items');
+  
   return data[0];
 };
 
@@ -193,6 +217,10 @@ export const updateSalePayment = async (saleId, paymentData) => {
   }
 
   console.log("Payment update result:", data[0]);
+  
+  // Invalidate sales cache after payment update
+  invalidateDataCache('sales');
+  
   return data[0];
 };
 
@@ -224,6 +252,10 @@ export const updateSale = async (id, updates, userId, isAdmin = false) => {
     .select();
 
   if (error) throw error;
+  
+  // Invalidate sales cache
+  invalidateDataCache('sales');
+  
   return data[0];
 };
 
@@ -247,6 +279,10 @@ export const deleteSale = async (id, userId, isAdmin = false) => {
     .select();
 
   if (error) throw error;
+  
+  // Invalidate sales cache
+  invalidateDataCache('sales');
+  
   return data[0];
 };
 
@@ -283,6 +319,10 @@ export const updateItemStock = async (itemId, quantitySold) => {
     }
 
     console.log(`Stock update successful for item ${itemId}:`, data);
+    
+    // Invalidate items cache after stock update
+    invalidateDataCache('items');
+    
     return data;
   } catch (error) {
     console.error("Error in updateItemStock:", error);
@@ -349,6 +389,10 @@ const updateItemStockManual = async (itemId, quantitySold) => {
   }
 
   console.log(`Manual stock update successful:`, data[0]);
+  
+  // Invalidate items cache after manual stock update
+  invalidateDataCache('items');
+  
   return data[0];
 };
 
