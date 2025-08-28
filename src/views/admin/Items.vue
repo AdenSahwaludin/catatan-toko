@@ -90,7 +90,14 @@
       <!-- Custom filters slot -->
       <template #filters>
         <v-row>
-          <v-col cols="12" md="3" v-if="!settingsStore.isStockHidden">
+          <v-col
+            cols="12"
+            md="3"
+            v-if="
+              !settingsStore.isStockHidden &&
+              settingsStore.isStockManagementEnabled
+            "
+          >
             <v-switch
               v-model="showLowStock"
               label="Stok menipis"
@@ -125,13 +132,17 @@
 
       <template #item.stock="{ item }">
         <v-chip
-          v-if="!settingsStore.isStockHidden"
+          v-if="
+            !settingsStore.isStockHidden &&
+            settingsStore.isStockManagementEnabled
+          "
           :color="getStockColor(item.stock)"
           size="small"
           variant="tonal"
         >
           {{ item.stock }}
         </v-chip>
+        <v-chip v-else color="grey" size="small" variant="tonal"> N/A </v-chip>
       </template>
 
       <template #item.categories.name="{ item }">
@@ -244,7 +255,14 @@
                 />
               </v-col>
 
-              <v-col cols="12" md="6" v-if="!settingsStore.isStockHidden">
+              <v-col
+                cols="12"
+                md="6"
+                v-if="
+                  !settingsStore.isStockHidden &&
+                  settingsStore.isStockManagementEnabled
+                "
+              >
                 <v-text-field
                   v-model="formData.stock"
                   label="Stok"
@@ -373,7 +391,7 @@ const formData = ref({
 const headers = computed(() => [
   { title: "Nama", key: "name", sortable: true },
   { title: "Harga", key: "price", sortable: true },
-  ...(settingsStore.isStockHidden
+  ...(settingsStore.isStockHidden || !settingsStore.isStockManagementEnabled
     ? []
     : [{ title: "Stok", key: "stock", sortable: true }]),
   { title: "Kategori", key: "categories.name", sortable: false },
@@ -444,7 +462,11 @@ const filteredItems = computed(() => {
     items = items.filter((item) => item.brand.toLowerCase().includes(brand));
   }
 
-  if (showLowStock.value && !settingsStore.isStockHidden) {
+  if (
+    showLowStock.value &&
+    !settingsStore.isStockHidden &&
+    settingsStore.isStockManagementEnabled
+  ) {
     items = items.filter((item) => item.stock < 10);
   }
 
@@ -587,7 +609,10 @@ const saveItem = async () => {
       brand: formData.value.brand.trim(),
       model: formData.value.model?.trim() || "",
       price: Number(formData.value.price),
-      stock: settingsStore.isStockHidden ? 999 : Number(formData.value.stock),
+      stock:
+        settingsStore.isStockHidden || !settingsStore.isStockManagementEnabled
+          ? 999
+          : Number(formData.value.stock),
       barcode: formData.value.barcode?.trim() || null,
     };
 
@@ -598,16 +623,16 @@ const saveItem = async () => {
         .eq("id", editingItem.value.id);
 
       if (error) throw error;
-      
+
       // Invalidate cache after edit
-      dataStore.invalidateCache('items');
+      dataStore.invalidateCache("items");
     } else {
       const { error } = await supabase.from("items").insert([itemData]);
 
       if (error) throw error;
-      
+
       // Invalidate cache after create
-      dataStore.invalidateCache('items');
+      dataStore.invalidateCache("items");
     }
 
     await dataStore.fetchItems();
@@ -637,8 +662,8 @@ const deleteItem = async () => {
     if (error) throw error;
 
     // Invalidate cache after delete
-    dataStore.invalidateCache('items');
-    
+    dataStore.invalidateCache("items");
+
     await dataStore.fetchItems();
     deleteDialog.value = false;
     itemToDelete.value = null;

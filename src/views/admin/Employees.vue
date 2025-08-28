@@ -278,7 +278,7 @@ const saveEmployee = async () => {
     }
 
     // Invalidate cache after create/update
-    dataStore.invalidateCache('sales'); // Sales data may be affected by employee changes
+    dataStore.invalidateCache("sales"); // Sales data may be affected by employee changes
     await fetchEmployees();
     closeDialog();
   } catch (error) {
@@ -306,8 +306,8 @@ const deleteEmployee = async () => {
     if (error) throw error;
 
     // Invalidate cache after delete
-    dataStore.invalidateCache('sales'); // Sales data may be affected by employee changes
-    
+    dataStore.invalidateCache("sales"); // Sales data may be affected by employee changes
+
     await fetchEmployees();
     deleteDialog.value = false;
     employeeToDelete.value = null;

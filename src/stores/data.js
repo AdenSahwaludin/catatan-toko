@@ -1,6 +1,12 @@
 import { defineStore } from "pinia";
 import { ref, computed } from "vue";
-import { getItems, getCategories, getSales, getUsers } from "@/utils/supabase";
+import {
+  getItems,
+  getCategories,
+  getSales,
+  getUsers,
+  getSettings,
+} from "@/utils/supabase";
 
 export const useDataStore = defineStore("data", () => {
   const items = ref([]);
@@ -8,6 +14,7 @@ export const useDataStore = defineStore("data", () => {
   const sales = ref([]);
   const employees = ref([]);
   const users = ref([]); // Added for all users (admin + employee)
+  const settings = ref([]);
   const loading = ref(false);
 
   // Cache status untuk mendeteksi apakah data sudah dimuat
@@ -17,6 +24,7 @@ export const useDataStore = defineStore("data", () => {
     sales: false,
     employees: false,
     users: false,
+    settings: false,
   });
 
   // Cache invalidation - untuk memaksa fetch ulang setelah operasi CRUD
@@ -26,16 +34,43 @@ export const useDataStore = defineStore("data", () => {
       console.log(`Cache invalidated for: ${type}`);
     } else {
       // Invalidate all cache
-      Object.keys(cacheStatus.value).forEach(key => {
+      Object.keys(cacheStatus.value).forEach((key) => {
         cacheStatus.value[key] = false;
       });
       console.log("All cache invalidated");
     }
   };
 
+  const fetchSettings = async (forceRefresh = false) => {
+    // Jika cache masih valid dan tidak ada force refresh, gunakan cache
+    if (
+      !forceRefresh &&
+      cacheStatus.value.settings &&
+      settings.value.length > 0
+    ) {
+      console.log("Using cached settings data");
+      return;
+    }
+
+    try {
+      loading.value = true;
+      settings.value = await getSettings();
+      cacheStatus.value.settings = true;
+      console.log("Settings data fetched from database");
+    } catch (error) {
+      console.error("Error fetching settings:", error);
+    } finally {
+      loading.value = false;
+    }
+  };
+
   const fetchCategories = async (forceRefresh = false) => {
     // Jika cache masih valid dan tidak ada force refresh, gunakan cache
-    if (!forceRefresh && cacheStatus.value.categories && categories.value.length > 0) {
+    if (
+      !forceRefresh &&
+      cacheStatus.value.categories &&
+      categories.value.length > 0
+    ) {
       console.log("Using cached categories data");
       return;
     }
@@ -55,9 +90,14 @@ export const useDataStore = defineStore("data", () => {
   const fetchItems = async (filters = {}, forceRefresh = false) => {
     // Jika ada filter, selalu fetch ulang
     const hasFilters = Object.keys(filters).length > 0;
-    
+
     // Jika cache masih valid dan tidak ada force refresh atau filter, gunakan cache
-    if (!forceRefresh && !hasFilters && cacheStatus.value.items && items.value.length > 0) {
+    if (
+      !forceRefresh &&
+      !hasFilters &&
+      cacheStatus.value.items &&
+      items.value.length > 0
+    ) {
       console.log("Using cached items data");
       return;
     }
@@ -77,7 +117,7 @@ export const useDataStore = defineStore("data", () => {
       if (!hasFilters) {
         cacheStatus.value.items = true;
       }
-      
+
       console.log("Items data fetched from database");
     } catch (error) {
       console.error("Error fetching items:", error);
@@ -89,9 +129,14 @@ export const useDataStore = defineStore("data", () => {
   const fetchSales = async (filters = {}, forceRefresh = false) => {
     // Jika ada filter, selalu fetch ulang
     const hasFilters = Object.keys(filters).length > 0;
-    
+
     // Jika cache masih valid dan tidak ada force refresh atau filter, gunakan cache
-    if (!forceRefresh && !hasFilters && cacheStatus.value.sales && sales.value.length > 0) {
+    if (
+      !forceRefresh &&
+      !hasFilters &&
+      cacheStatus.value.sales &&
+      sales.value.length > 0
+    ) {
       console.log("Using cached sales data");
       return;
     }
@@ -99,12 +144,12 @@ export const useDataStore = defineStore("data", () => {
     try {
       loading.value = true;
       sales.value = await getSales(filters);
-      
+
       // Update cache status hanya jika tidak ada filter
       if (!hasFilters) {
         cacheStatus.value.sales = true;
       }
-      
+
       console.log("Sales data fetched from database");
     } catch (error) {
       console.error("Error fetching sales:", error);
@@ -115,7 +160,11 @@ export const useDataStore = defineStore("data", () => {
 
   const fetchEmployees = async (forceRefresh = false) => {
     // Jika cache masih valid dan tidak ada force refresh, gunakan cache
-    if (!forceRefresh && cacheStatus.value.employees && employees.value.length > 0) {
+    if (
+      !forceRefresh &&
+      cacheStatus.value.employees &&
+      employees.value.length > 0
+    ) {
       console.log("Using cached employees data");
       return;
     }
@@ -157,7 +206,12 @@ export const useDataStore = defineStore("data", () => {
       loading.value = true;
 
       // Fetch data secara parallel untuk performa yang lebih baik
-      await Promise.all([fetchCategories(), fetchUsers(), fetchItems()]);
+      await Promise.all([
+        fetchCategories(),
+        fetchUsers(),
+        fetchItems(),
+        fetchSettings(),
+      ]);
 
       console.log("Initial data loaded successfully");
     } catch (error) {
@@ -179,6 +233,7 @@ export const useDataStore = defineStore("data", () => {
         fetchItems({}, true),
         fetchSales({}, true),
         fetchEmployees(true),
+        fetchSettings(true),
       ]);
 
       console.log("All data refreshed successfully");
@@ -204,6 +259,7 @@ export const useDataStore = defineStore("data", () => {
     sales,
     employees,
     users,
+    settings,
     loading,
 
     // Computed
@@ -218,6 +274,7 @@ export const useDataStore = defineStore("data", () => {
     fetchSales,
     fetchEmployees,
     fetchUsers,
+    fetchSettings,
     fetchInitialData,
     refreshAllData,
     invalidateCache,

@@ -230,7 +230,7 @@ const saveCategory = async () => {
     }
 
     // Invalidate cache after create/update
-    dataStore.invalidateCache('categories');
+    dataStore.invalidateCache("categories");
     await dataStore.fetchCategories();
     closeDialog();
   } catch (error) {
@@ -258,9 +258,9 @@ const deleteCategory = async () => {
     if (error) throw error;
 
     // Invalidate cache after delete
-    dataStore.invalidateCache('categories');
-    dataStore.invalidateCache('items'); // Also invalidate items since category relationships changed
-    
+    dataStore.invalidateCache("categories");
+    dataStore.invalidateCache("items"); // Also invalidate items since category relationships changed
+
     await dataStore.fetchCategories();
     await dataStore.fetchItems(); // Refresh items to update category relationships
     deleteDialog.value = false;

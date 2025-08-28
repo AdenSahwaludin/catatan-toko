@@ -78,6 +78,25 @@
               Menyembunyikan semua informasi stok produk di seluruh aplikasi
             </div>
           </v-col>
+
+          <v-col cols="12" md="6">
+            <v-switch
+              v-model="settingsStore.settings.stockManagementEnabled"
+              color="primary"
+              label="Aktifkan Manajemen Stok"
+              :prepend-icon="
+                settingsStore.settings.stockManagementEnabled
+                  ? 'mdi-package-variant'
+                  : 'mdi-package-variant-closed'
+              "
+              @update:model-value="handleStockManagementToggle"
+              :loading="updatingStockManagement"
+            />
+            <div class="text-caption text-medium-emphasis">
+              Mengaktifkan/menonaktifkan semua fitur manajemen stok termasuk
+              tampilan, operasi, dan perhitungan stok
+            </div>
+          </v-col>
         </v-row>
 
         <v-row>
@@ -135,7 +154,12 @@
               @click="handleFileImport"
               :loading="importing"
               prepend-icon="mdi-import"
-              :disabled="!importFile || (Array.isArray(importFile) ? importFile.length === 0 : !importFile)"
+              :disabled="
+                !importFile ||
+                (Array.isArray(importFile)
+                  ? importFile.length === 0
+                  : !importFile)
+              "
               class="mt-2"
               block
             >
@@ -424,6 +448,7 @@ const importing = ref(false);
 const confirmDialog = ref(false);
 const confirmLoading = ref(false);
 const importFile = ref(null);
+const updatingStockManagement = ref(false);
 
 // JSON Import variables
 const jsonImportData = ref("");
@@ -461,7 +486,7 @@ const systemInfo = computed(() => ({
 const saveSettings = () => {
   savingSettings.value = true;
 
-  const success = settingsStore.saveSettings();
+  const success = settingsStore.saveLocalSettings();
 
   setTimeout(() => {
     savingSettings.value = false;
@@ -477,6 +502,40 @@ const saveSettings = () => {
       });
     }
   }, 1000);
+};
+
+const handleStockManagementToggle = async (enabled) => {
+  updatingStockManagement.value = true;
+
+  try {
+    const success = await settingsStore.updateStockManagement(enabled);
+
+    if (success) {
+      notificationStore.addNotification({
+        type: "success",
+        message: enabled
+          ? "Manajemen stok berhasil diaktifkan"
+          : "Manajemen stok berhasil dinonaktifkan",
+      });
+    } else {
+      // Revert the switch if failed
+      settingsStore.settings.stockManagementEnabled = !enabled;
+      notificationStore.addNotification({
+        type: "error",
+        message: "Gagal mengubah pengaturan manajemen stok",
+      });
+    }
+  } catch (error) {
+    console.error("Error updating stock management:", error);
+    // Revert the switch if failed
+    settingsStore.settings.stockManagementEnabled = !enabled;
+    notificationStore.addNotification({
+      type: "error",
+      message: "Terjadi kesalahan saat mengubah pengaturan",
+    });
+  } finally {
+    updatingStockManagement.value = false;
+  }
 };
 
 const exportAllData = async () => {
@@ -563,7 +622,7 @@ const onFileSelected = (event) => {
 const handleFileImport = async () => {
   // Check different ways the file might be stored
   let file = null;
-  
+
   if (importFile.value) {
     if (Array.isArray(importFile.value)) {
       file = importFile.value[0];
@@ -571,10 +630,10 @@ const handleFileImport = async () => {
       file = importFile.value;
     }
   }
-  
+
   console.log("Import file value:", importFile.value);
   console.log("Selected file:", file);
-  
+
   if (!file) {
     notificationStore.addNotification({
       type: "warning",
@@ -1229,7 +1288,8 @@ const loadSettings = () => {
 };
 
 onMounted(async () => {
-  // No need to load settings manually as settingsStore handles it automatically
+  // Initialize settings store
+  await settingsStore.initializeSettings();
 
   try {
     await Promise.all([

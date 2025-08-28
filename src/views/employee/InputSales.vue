@@ -162,7 +162,10 @@
               class="d-flex"
               cols="5"
               md="2"
-              v-if="!settingsStore.isStockHidden"
+              v-if="
+                !settingsStore.isStockHidden &&
+                settingsStore.isStockManagementEnabled
+              "
             >
               <v-switch
                 v-model="showAvailableOnly"
@@ -320,7 +323,11 @@
                   style="height: 100%"
                   :ripple="true"
                   hover
-                  :disabled="!settingsStore.isStockHidden && item.stock === 0"
+                  :disabled="
+                    settingsStore.isStockManagementEnabled &&
+                    !settingsStore.isStockHidden &&
+                    item.stock === 0
+                  "
                   :class="{
                     'item-card': true,
                     'item-in-cart': isInCart(item.id),
@@ -332,7 +339,10 @@
                   <v-card-text class="pa-3">
                     <!-- Stock indicator -->
                     <div
-                      v-if="!settingsStore.isStockHidden"
+                      v-if="
+                        !settingsStore.isStockHidden &&
+                        settingsStore.isStockManagementEnabled
+                      "
                       class="d-flex justify-end mb-2"
                     >
                       <v-chip
@@ -377,7 +387,11 @@
                       </v-chip>
                     </div>
                     <div
-                      v-else-if="settingsStore.isStockHidden || item.stock > 0"
+                      v-else-if="
+                        settingsStore.isStockHidden ||
+                        !settingsStore.isStockManagementEnabled ||
+                        item.stock > 0
+                      "
                       class="text-center"
                     >
                       <v-icon
@@ -449,7 +463,10 @@
 
               <template #item.stock="{ item }">
                 <v-chip
-                  v-if="!settingsStore.isStockHidden"
+                  v-if="
+                    !settingsStore.isStockHidden &&
+                    settingsStore.isStockManagementEnabled
+                  "
                   :color="
                     item.stock < 5
                       ? 'error'
@@ -476,7 +493,11 @@
                     {{ getCartQuantity(item.id) }}
                   </v-chip>
                   <v-icon
-                    v-else-if="settingsStore.isStockHidden || item.stock > 0"
+                    v-else-if="
+                      settingsStore.isStockHidden ||
+                      !settingsStore.isStockManagementEnabled ||
+                      item.stock > 0
+                    "
                     color="primary"
                     size="small"
                   >
@@ -634,6 +655,7 @@
                               "
                               :disabled="
                                 !cartItem.isCustom &&
+                                settingsStore.isStockManagementEnabled &&
                                 !settingsStore.isStockHidden &&
                                 cartItem.quantity >= cartItem.stock
                               "
@@ -722,6 +744,7 @@
                         "
                         :disabled="
                           !cartItem.isCustom &&
+                          settingsStore.isStockManagementEnabled &&
                           !settingsStore.isStockHidden &&
                           cartItem.quantity >= cartItem.stock
                         "
@@ -1045,7 +1068,7 @@ const itemHeaders = computed(() => [
   { title: "Merek", key: "brand", sortable: true },
   { title: "Model", key: "model", sortable: true },
   { title: "Kategori", key: "categories.name", sortable: true },
-  ...(settingsStore.isStockHidden
+  ...(settingsStore.isStockHidden || !settingsStore.isStockManagementEnabled
     ? []
     : [{ title: "Stok", key: "stock", sortable: true }]),
   { title: "Status", key: "actions", sortable: false, width: 100 },
@@ -1137,7 +1160,7 @@ const filteredItems = computed(() => {
   }
 
   // Stock filter
-  if (showAvailableOnly.value) {
+  if (showAvailableOnly.value && settingsStore.isStockManagementEnabled) {
     items = items.filter((item) => item.stock > 0);
   }
 
@@ -1212,8 +1235,12 @@ const receiptSaleData = computed(() => {
 
 // Handle item click - main function for adding items to cart
 const handleItemClick = (item) => {
-  // Skip stock validation if stock is hidden
-  if (!settingsStore.isStockHidden && item.stock === 0) {
+  // Skip stock validation if stock management is disabled or hidden
+  if (
+    settingsStore.isStockManagementEnabled &&
+    !settingsStore.isStockHidden &&
+    item.stock === 0
+  ) {
     notificationStore.addNotification({
       type: "error",
       message: `Barang "${item.name}" sedang habis stok`,
@@ -1263,11 +1290,15 @@ const addToCart = (item) => {
   );
 
   if (existingIndex >= 0) {
-    // Check if we can increase quantity (skip if stock is hidden)
+    // Check if we can increase quantity (skip if stock management is disabled or hidden)
     const currentCartItem = cart.value[existingIndex];
     const newQuantity = currentCartItem.quantity + 1;
 
-    if (!settingsStore.isStockHidden && newQuantity > item.stock) {
+    if (
+      settingsStore.isStockManagementEnabled &&
+      !settingsStore.isStockHidden &&
+      newQuantity > item.stock
+    ) {
       notificationStore.addNotification({
         type: "error",
         message: `Stok "${item.name}" tidak mencukupi. Maksimal: ${item.stock}`,
@@ -1282,8 +1313,12 @@ const addToCart = (item) => {
       message: `"${item.name}" ditambahkan (${newQuantity})`,
     });
   } else {
-    // Check stock before adding new item (skip if stock is hidden)
-    if (!settingsStore.isStockHidden && item.stock <= 0) {
+    // Check stock before adding new item (skip if stock management is disabled or hidden)
+    if (
+      settingsStore.isStockManagementEnabled &&
+      !settingsStore.isStockHidden &&
+      item.stock <= 0
+    ) {
       notificationStore.addNotification({
         type: "error",
         message: `Barang "${item.name}" sedang habis stok`,
@@ -1319,8 +1354,12 @@ const updateCartQuantity = (index, newQuantity) => {
     return;
   }
 
-  // Validate against available stock for regular items (skip if stock is hidden)
-  if (!settingsStore.isStockHidden && newQuantity > cartItem.stock) {
+  // Validate against available stock for regular items (skip if stock management is disabled or hidden)
+  if (
+    settingsStore.isStockManagementEnabled &&
+    !settingsStore.isStockHidden &&
+    newQuantity > cartItem.stock
+  ) {
     notificationStore.addNotification({
       type: "error",
       message: `Stok "${cartItem.name}" tidak mencukupi. Maksimal: ${cartItem.stock}`,
@@ -1392,10 +1431,13 @@ const submitItemsSale = async () => {
     console.log("Refreshing items data before sale...");
     await dataStore.fetchItems();
 
-    // Validate stock availability before processing sale (skip when stock is hidden)
+    // Validate stock availability before processing sale (skip when stock management is disabled or hidden)
     const stockErrors = [];
 
-    if (!settingsStore.isStockHidden) {
+    if (
+      settingsStore.isStockManagementEnabled &&
+      !settingsStore.isStockHidden
+    ) {
       for (const cartItem of cart.value) {
         // Skip stock validation for custom items
         if (cartItem.isCustom) {
@@ -1428,7 +1470,7 @@ const submitItemsSale = async () => {
       }
     } else {
       console.log(
-        "Stock validation skipped because stock is hidden in settings"
+        "Stock validation skipped because stock management is disabled or hidden in settings"
       );
     }
 
@@ -1472,8 +1514,11 @@ const submitItemsSale = async () => {
     lastSaleId.value = savedSale.id;
 
     console.log("Updating stock for items...");
-    // Update stock for each item (skip custom items and when stock is hidden)
-    if (!settingsStore.isStockHidden) {
+    // Update stock for each item (skip custom items and when stock management is disabled or hidden)
+    if (
+      settingsStore.isStockManagementEnabled &&
+      !settingsStore.isStockHidden
+    ) {
       for (const cartItem of cart.value) {
         // Skip stock update for custom items
         if (cartItem.isCustom) {
@@ -1489,7 +1534,9 @@ const submitItemsSale = async () => {
         await updateItemStock(cartItem.id, cartItem.quantity);
       }
     } else {
-      console.log("Stock updates skipped because stock is hidden in settings");
+      console.log(
+        "Stock updates skipped because stock management is disabled or hidden in settings"
+      );
     }
 
     lastSaleAmount.value = cartTotal.value;

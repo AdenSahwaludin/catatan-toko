@@ -458,8 +458,12 @@ watch(isMobile, (newVal) => {
 }
 
 .brand-avatar {
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%) !important;
-  box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+  background: linear-gradient(
+    135deg,
+    #1d283a 0%,
+    rgb(7, 68, 138) 100%
+  ) !important;
+  box-shadow: 0 4px 15px rgba(25, 118, 210, 0.3);
 }
 
 .employee-brand {

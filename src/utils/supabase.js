@@ -16,12 +16,14 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 // Helper function to invalidate cache after CRUD operations
 const invalidateDataCache = (type) => {
   // Import dinamis untuk menghindari circular dependency
-  import('@/stores/data.js').then(({ useDataStore }) => {
-    const dataStore = useDataStore();
-    dataStore.invalidateCache(type);
-  }).catch(err => {
-    console.warn('Could not invalidate cache:', err);
-  });
+  import("@/stores/data.js")
+    .then(({ useDataStore }) => {
+      const dataStore = useDataStore();
+      dataStore.invalidateCache(type);
+    })
+    .catch((err) => {
+      console.warn("Could not invalidate cache:", err);
+    });
 };
 
 // Database helper functions
@@ -157,11 +159,11 @@ export const createSale = async (saleData) => {
   }
 
   console.log("Sale created successfully:", data[0]);
-  
+
   // Invalidate sales and items cache
-  invalidateDataCache('sales');
-  invalidateDataCache('items'); // Items cache juga karena stok berubah
-  
+  invalidateDataCache("sales");
+  invalidateDataCache("items"); // Items cache juga karena stok berubah
+
   return data[0];
 };
 
@@ -172,10 +174,10 @@ export const createCategory = async (categoryData) => {
     .select();
 
   if (error) throw error;
-  
+
   // Invalidate categories cache
-  invalidateDataCache('categories');
-  
+  invalidateDataCache("categories");
+
   return data[0];
 };
 
@@ -186,10 +188,10 @@ export const createItem = async (itemData) => {
     .select();
 
   if (error) throw error;
-  
+
   // Invalidate items cache
-  invalidateDataCache('items');
-  
+  invalidateDataCache("items");
+
   return data[0];
 };
 
@@ -217,10 +219,10 @@ export const updateSalePayment = async (saleId, paymentData) => {
   }
 
   console.log("Payment update result:", data[0]);
-  
+
   // Invalidate sales cache after payment update
-  invalidateDataCache('sales');
-  
+  invalidateDataCache("sales");
+
   return data[0];
 };
 
@@ -252,10 +254,10 @@ export const updateSale = async (id, updates, userId, isAdmin = false) => {
     .select();
 
   if (error) throw error;
-  
+
   // Invalidate sales cache
-  invalidateDataCache('sales');
-  
+  invalidateDataCache("sales");
+
   return data[0];
 };
 
@@ -279,10 +281,10 @@ export const deleteSale = async (id, userId, isAdmin = false) => {
     .select();
 
   if (error) throw error;
-  
+
   // Invalidate sales cache
-  invalidateDataCache('sales');
-  
+  invalidateDataCache("sales");
+
   return data[0];
 };
 
@@ -319,10 +321,10 @@ export const updateItemStock = async (itemId, quantitySold) => {
     }
 
     console.log(`Stock update successful for item ${itemId}:`, data);
-    
+
     // Invalidate items cache after stock update
-    invalidateDataCache('items');
-    
+    invalidateDataCache("items");
+
     return data;
   } catch (error) {
     console.error("Error in updateItemStock:", error);
@@ -389,10 +391,10 @@ const updateItemStockManual = async (itemId, quantitySold) => {
   }
 
   console.log(`Manual stock update successful:`, data[0]);
-  
+
   // Invalidate items cache after manual stock update
-  invalidateDataCache('items');
-  
+  invalidateDataCache("items");
+
   return data[0];
 };
 
@@ -407,4 +409,77 @@ export const getUsers = async (role = null) => {
 
   if (error) throw error;
   return data;
+};
+
+// Settings functions
+export const getSettings = async () => {
+  const { data, error } = await supabase
+    .from("settings")
+    .select("*")
+    .order("key");
+
+  if (error) throw error;
+  return data;
+};
+
+export const getSetting = async (key) => {
+  const { data, error } = await supabase
+    .from("settings")
+    .select("value")
+    .eq("key", key)
+    .single();
+
+  if (error) {
+    if (error.code === "PGRST116") {
+      // Setting not found, return default
+      return null;
+    }
+    throw error;
+  }
+  return data.value;
+};
+
+export const updateSetting = async (key, value) => {
+  console.log("updateSetting called with:", { key, value });
+
+  // First try to update existing record
+  const { data: updateData, error: updateError } = await supabase
+    .from("settings")
+    .update({
+      value,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("key", key)
+    .select();
+
+  if (updateError) {
+    console.error("updateSetting update error:", updateError);
+
+    // If update fails, try insert
+    const { data: insertData, error: insertError } = await supabase
+      .from("settings")
+      .insert({
+        key,
+        value,
+        updated_at: new Date().toISOString(),
+      })
+      .select();
+
+    if (insertError) {
+      console.error("updateSetting insert error:", insertError);
+      throw insertError;
+    }
+
+    console.log("updateSetting insert success:", insertData);
+    // Invalidate settings cache if we add it to data store
+    invalidateDataCache("settings");
+    return insertData[0];
+  }
+
+  console.log("updateSetting update success:", updateData);
+
+  // Invalidate settings cache if we add it to data store
+  invalidateDataCache("settings");
+
+  return updateData[0];
 };

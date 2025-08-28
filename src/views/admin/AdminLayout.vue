@@ -15,6 +15,4 @@ import BaseLayout from "@/components/base/BaseLayout.vue";
 const { menuItems } = useLayoutConfig("admin");
 </script>
 
-<style scoped>
-/* Admin-specific custom styles if needed */
-</style>
+<style scoped></style>

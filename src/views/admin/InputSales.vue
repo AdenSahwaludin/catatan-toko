@@ -162,7 +162,10 @@
               class="d-flex"
               cols="5"
               md="2"
-              v-if="!settingsStore.isStockHidden"
+              v-if="
+                !settingsStore.isStockHidden &&
+                settingsStore.isStockManagementEnabled
+              "
             >
               <v-switch
                 v-model="showAvailableOnly"
@@ -497,9 +500,9 @@
 
       <!-- Cart -->
       <v-card id="cart-section" class="mb-4">
-        <v-card-title class="d-flex align-center justify-space-between md-">
+        <v-card-title class="d-flex align-center justify-space-between">
           <span>Keranjang Penjualan</span>
-          <div class="d-flex align-center" ">
+          <div class="d-flex align-center gap-4">
             <v-chip class="ml-4" color="primary" v-if="cart.length">
               {{ cart.length }} item
             </v-chip>
@@ -1453,8 +1456,11 @@ const submitItemsSale = async () => {
     lastSaleId.value = savedSale.id;
 
     console.log("Updating stock for items...");
-    // Update stock for each item (skip custom items and when stock is hidden)
-    if (!settingsStore.isStockHidden) {
+    // Update stock for each item (skip custom items and when stock management is disabled)
+    if (
+      !settingsStore.isStockHidden &&
+      settingsStore.isStockManagementEnabled
+    ) {
       for (const cartItem of cart.value) {
         // Skip stock update for custom items
         if (cartItem.isCustom) {
@@ -1470,7 +1476,9 @@ const submitItemsSale = async () => {
         await updateItemStock(cartItem.id, cartItem.quantity);
       }
     } else {
-      console.log("Stock updates skipped because stock is hidden in settings");
+      console.log(
+        "Stock updates skipped because stock management is disabled in settings"
+      );
     }
 
     lastSaleAmount.value = cartTotal.value;
@@ -1535,7 +1543,8 @@ const clearCart = () => {
 const refreshItems = async () => {
   loadingItems.value = true;
   try {
-    await dataStore.fetchItems();
+    // Force refresh items to bypass cache and fetch fresh data
+    await dataStore.fetchItems({}, true);
     console.log("Items data refreshed");
   } catch (error) {
     console.error("Error refreshing items:", error);
@@ -1552,6 +1561,13 @@ watch([itemSearch, selectedCategory, showAvailableOnly], () => {
 
 watch(itemsPerPage, () => {
   currentPage.value = 1;
+});
+
+// Watch for input mode change to refresh items list when selecting 'items' mode
+watch(inputMode, (mode) => {
+  if (mode === "items") {
+    refreshItems();
+  }
 });
 
 // Reset custom item form when dialog opens

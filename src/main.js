@@ -6,6 +6,7 @@ import vuetify from "./plugins/vuetify";
 import { useAuthStore } from "./stores/auth";
 import { useThemeStore } from "./stores/theme";
 import { useDataStore } from "./stores/data";
+import { useSettingsStore } from "./stores/settings";
 import { setupSessionMonitor } from "./utils/sessionMonitor";
 
 const app = createApp(App);
@@ -19,6 +20,7 @@ app.use(vuetify);
 const authStore = useAuthStore();
 const themeStore = useThemeStore();
 const dataStore = useDataStore();
+const settingsStore = useSettingsStore();
 
 // Initialize auth store with localStorage data
 authStore.initAuth();
@@ -40,8 +42,14 @@ themeStore.$subscribe(() => {
 // Preload critical data jika user sudah login
 if (authStore.isLoggedIn) {
   // Preload data penting tanpa blocking UI
-  setTimeout(() => {
-    dataStore.fetchInitialData().catch(console.error);
+  setTimeout(async () => {
+    try {
+      // Initialize settings first, then load other data
+      await settingsStore.initializeSettings();
+      await dataStore.fetchInitialData();
+    } catch (error) {
+      console.error("Error loading initial data:", error);
+    }
   }, 100);
 }
 

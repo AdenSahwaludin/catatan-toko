@@ -72,7 +72,10 @@
 
           <v-col cols="12" sm="6" md="2">
             <v-switch
-              v-if="!settingsStore.isStockHidden"
+              v-if="
+                !settingsStore.isStockHidden &&
+                settingsStore.isStockManagementEnabled
+              "
               v-model="showLowStock"
               label="Stok menipis"
               color="warning"
@@ -246,7 +249,10 @@
                   </div>
                 </div>
                 <v-chip
-                  v-if="!settingsStore.isStockHidden"
+                  v-if="
+                    !settingsStore.isStockHidden &&
+                    settingsStore.isStockManagementEnabled
+                  "
                   :color="getStockColor(item.stock)"
                   size="small"
                   variant="tonal"
@@ -286,7 +292,11 @@
                 variant="text"
                 size="small"
                 @click="addToQuickSale(item)"
-                :disabled="!settingsStore.isStockHidden && item.stock === 0"
+                :disabled="
+                  settingsStore.isStockManagementEnabled &&
+                  !settingsStore.isStockHidden &&
+                  item.stock === 0
+                "
                 prepend-icon="mdi-cart-plus"
               >
                 Tambah ke Penjualan
@@ -358,7 +368,10 @@
 
         <template #item.stock="{ item }">
           <v-chip
-            v-if="!settingsStore.isStockHidden"
+            v-if="
+              !settingsStore.isStockHidden &&
+              settingsStore.isStockManagementEnabled
+            "
             :color="getStockColor(item.stock)"
             size="small"
             variant="tonal"
@@ -372,7 +385,11 @@
             color="primary"
             size="small"
             @click="addToQuickSale(item)"
-            :disabled="!settingsStore.isStockHidden && item.stock === 0"
+            :disabled="
+              settingsStore.isStockManagementEnabled &&
+              !settingsStore.isStockHidden &&
+              item.stock === 0
+            "
           >
             Tambah
           </v-btn>
@@ -401,7 +418,12 @@
             label="Jumlah"
             type="number"
             variant="outlined"
-            :max="settingsStore.isStockHidden ? undefined : selectedItem.stock"
+            :max="
+              settingsStore.isStockHidden ||
+              !settingsStore.isStockManagementEnabled
+                ? undefined
+                : selectedItem.stock
+            "
             :rules="[validateInput.required, validateInput.positiveNumber]"
             required
           />
@@ -417,6 +439,7 @@
 
           <v-alert
             v-if="
+              settingsStore.isStockManagementEnabled &&
               !settingsStore.isStockHidden &&
               quickSaleQuantity > selectedItem.stock
             "
@@ -436,7 +459,8 @@
             @click="addToCart"
             :disabled="
               !quickSaleQuantity ||
-              (!settingsStore.isStockHidden &&
+              (settingsStore.isStockManagementEnabled &&
+                !settingsStore.isStockHidden &&
                 quickSaleQuantity > selectedItem.stock)
             "
           >
@@ -504,11 +528,11 @@ const debouncedSearch = ref("");
 
 const headers = computed(() => [
   { title: "Barang", key: "name", sortable: true },
-  { title: "Barcode", key: "barcode", sortable: true },
-  { title: "Kategori", key: "categories.name", sortable: true },
+  // { title: "Barcode", key: "barcode", sortable: true },
+  // { title: "Kategori", key: "categories.name", sortable: true },
   { title: "Model", key: "model", sortable: true },
   { title: "Harga", key: "price", sortable: true },
-  ...(settingsStore.isStockHidden
+  ...(settingsStore.isStockHidden || !settingsStore.isStockManagementEnabled
     ? []
     : [{ title: "Stok", key: "stock", sortable: true }]),
   { title: "Aksi", key: "actions", sortable: false, width: 100 },
@@ -577,7 +601,7 @@ const filteredItems = computed(() => {
   }
 
   // Low stock filter
-  if (showLowStock.value) {
+  if (showLowStock.value && settingsStore.isStockManagementEnabled) {
     items = items.filter((item) => item.stock < 5);
   }
 
