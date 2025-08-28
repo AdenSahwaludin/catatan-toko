@@ -1543,9 +1543,10 @@ const clearCart = () => {
 const refreshItems = async () => {
   loadingItems.value = true;
   try {
-    // Force refresh items to bypass cache and fetch fresh data
-    await dataStore.fetchItems({}, true);
-    console.log("Items data refreshed");
+    // Invalidate cache and fetch fresh data
+    dataStore.invalidateCache("items");
+    await dataStore.fetchItems();
+    console.log("Items data refreshed from database");
   } catch (error) {
     console.error("Error refreshing items:", error);
     alert("Gagal memuat ulang data barang");
@@ -1563,10 +1564,13 @@ watch(itemsPerPage, () => {
   currentPage.value = 1;
 });
 
-// Watch for input mode change to refresh items list when selecting 'items' mode
+// Watch for input mode change to load items using cache when selecting 'items' mode
 watch(inputMode, (mode) => {
   if (mode === "items") {
-    refreshItems();
+    loadingItems.value = true;
+    dataStore.fetchItems().finally(() => {
+      loadingItems.value = false;
+    });
   }
 });
 
@@ -1786,7 +1790,9 @@ onMounted(async () => {
 
   loadingItems.value = true;
   try {
+    // Use cache for initial load - faster startup
     await Promise.all([dataStore.fetchItems(), dataStore.fetchCategories()]);
+    console.log("Initial data loaded (using cache if available)");
   } catch (error) {
     console.error("Error loading data:", error);
   } finally {
